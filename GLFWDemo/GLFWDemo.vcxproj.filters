@@ -1,0 +1,90 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{3E7C1F29-368F-401E-B0CF-20BE79FAD207}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+  
+    <Filter Include="GLFW Source Files">
+      <UniqueIdentifier>{5C9A27B0-8AE1-42CB-8D98-BD32A25283C6}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  
+    <ClCompile Include="$(GlfwRoot)\src\context.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\egl_context.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\init.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\input.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\monitor.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\null_init.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\null_joystick.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\null_monitor.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\null_window.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\osmesa_context.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\platform.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\vulkan.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\wgl_context.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\win32_init.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\win32_joystick.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\win32_module.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\win32_monitor.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\win32_thread.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\win32_time.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\win32_window.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="$(GlfwRoot)\src\window.c">
+      <Filter>GLFW Source Files</Filter>
+    </ClCompile>
+  
+    <ClCompile Include="src\Window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile></ItemGroup>
+
+  <ItemGroup>
+    <ClInclude Include="src\Window.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+  </ItemGroup></Project>

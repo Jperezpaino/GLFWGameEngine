@@ -3,24 +3,21 @@
 #include <iostream>
 #include <stdexcept>
 
-Window* Window::window = nullptr;
+Window::Window() = default;
 
-Window::Window()
-    : width(1920),
-      height(1080),
-      title("Mario"),
-      glfwWindow(nullptr)
+Window::~Window()
 {
-}
-
-Window* Window::get()
-{
-    if (window == nullptr)
+    if (m_glfwWindow != nullptr)
     {
-        window = new Window();
+        glfwDestroyWindow(m_glfwWindow);
+        m_glfwWindow = nullptr;
     }
 
-    return window;
+    if (m_glfwInitialized)
+    {
+        glfwTerminate();
+        m_glfwInitialized = false;
+    }
 }
 
 void Window::run()
@@ -41,48 +38,45 @@ void Window::init()
         throw std::runtime_error("Unable to initialize GLFW.");
     }
 
+    m_glfwInitialized = true;
+
     glfwDefaultWindowHints();
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
-    glfwWindow = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
-    if (glfwWindow == nullptr)
+    m_glfwWindow = glfwCreateWindow(m_width, m_height, m_title.c_str(), nullptr, nullptr);
+    if (m_glfwWindow == nullptr)
     {
-        glfwTerminate();
         throw std::runtime_error("Failed to create the GLFW window.");
     }
 
-    glfwMakeContextCurrent(glfwWindow);
+    glfwMakeContextCurrent(m_glfwWindow);
     glfwSwapInterval(1);
-    glfwShowWindow(glfwWindow);
+    glfwShowWindow(m_glfwWindow);
 }
 
 void Window::loop()
 {
-    while (!glfwWindowShouldClose(glfwWindow))
+    while (!glfwWindowShouldClose(m_glfwWindow))
     {
         glfwPollEvents();
-
-        if (glfwGetKey(glfwWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        {
-            glfwSetWindowShouldClose(glfwWindow, GLFW_TRUE);
-        }
-
-        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-
-        glfwSwapBuffers(glfwWindow);
+        processInput();
+        render();
+        glfwSwapBuffers(m_glfwWindow);
     }
 }
 
-Window::~Window()
+void Window::processInput()
 {
-    if (glfwWindow != nullptr)
+    if (glfwGetKey(m_glfwWindow, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
-        glfwDestroyWindow(glfwWindow);
-        glfwWindow = nullptr;
+        glfwSetWindowShouldClose(m_glfwWindow, GLFW_TRUE);
     }
+}
 
-    glfwTerminate();
+void Window::render()
+{
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
 }

@@ -3,18 +3,14 @@
 #include <exception>
 #include <iostream>
 
-int main()
-{
-    try
-    {
-        Application app;
-        app.run();
-    }
-    catch (const std::exception& e)
-    {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return -1;
-    }
+int main() {
+  try {
+    Application application;
+    application.run();
+  } catch (const std::exception& exception) {
+    std::cerr << "Error: " << exception.what() << std::endl;
+    return -1;
+  }
 
-    return 0;
+  return 0;
 }

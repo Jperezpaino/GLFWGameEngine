@@ -1,22 +1,22 @@
-#ifndef APPLICATION_H
-#define APPLICATION_H
+#pragma once
 
 #include "Window.h"
 
-class Application
-{
-public:
+class Application {
+
+  public:
+
     Application();
 
     Application(const Application&) = delete;
-    Application& operator=(const Application&) = delete;
+    Application& operator = (const Application&) = delete;
     Application(Application&&) = delete;
-    Application& operator=(Application&&) = delete;
+    Application& operator = (Application&&) = delete;
 
     void run();
 
-private:
-    Window m_window;
-};
+  private:
 
-#endif // APPLICATION_H
+    Window m_window;
+
+};

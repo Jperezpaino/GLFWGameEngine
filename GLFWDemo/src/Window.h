@@ -1,34 +1,31 @@
-#ifndef WINDOW_H
-#define WINDOW_H
+#pragma once
 
 #include <GLFW/glfw3.h>
-
 #include <string>
 
-class Window
-{
-public:
+class Window {
+
+  public:
+
     Window();
     ~Window();
 
     Window(const Window&) = delete;
-    Window& operator=(const Window&) = delete;
+    Window& operator = (const Window&) = delete;
     Window(Window&&) = delete;
-    Window& operator=(Window&&) = delete;
+    Window& operator = (Window&&) = delete;
 
     void run();
 
-private:
-    void init();
-    void loop();
-    void processInput();
-    void render();
+  private:
 
-    int m_width = 1920;
-    int m_height = 1080;
-    std::string m_title = "Mario";
+    int m_width = 1440;
+    int m_height = 810;
+    std::string m_title = "GLFW Game Engine";
     GLFWwindow* m_glfwWindow = nullptr;
     bool m_glfwInitialized = false;
-};
 
-#endif // WINDOW_H
+    void init();
+    void loop();
+
+};

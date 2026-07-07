@@ -2,7 +2,6 @@
 
 Application::Application() = default;
 
-void Application::run()
-{
-    m_window.run();
+void Application::run() {
+  m_window.run();
 }

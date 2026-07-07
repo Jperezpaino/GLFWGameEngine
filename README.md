@@ -1,6 +1,6 @@
-# GLFW Game Engine 0.1.0
+# GLFW Game Engine 0.2.0
 
-Demo base en C++ para Visual Studio 2019 que abre una ventana con GLFW, crea un contexto OpenGL y limpia el fondo en rojo.
+Demo base en C++ para Visual Studio 2019 que abre una ventana con GLFW, crea un contexto OpenGL y procesa entrada de teclado mediante una clase `KeyListener`.
 
 ## Requisitos
 
@@ -21,12 +21,20 @@ GLFWDemo/src
 |-- Application.h
 |-- Application.cpp
 |-- Window.h
-`-- Window.cpp
+|-- Window.cpp
+|-- KeyListener.h
+`-- KeyListener.cpp
 ```
 
 - `main.cpp`: punto de entrada minimo.
 - `Application`: capa principal de la aplicacion.
-- `Window`: encapsula GLFW, la ventana y el bucle basico.
+- `Window`: encapsula GLFW, la ventana, el bucle principal, el input y el render basico.
+- `KeyListener`: guarda el estado de las teclas recibidas desde el callback de GLFW.
+
+## Controles
+
+- `ESC`: cierra la ventana.
+- `SPACE`: activa un fundido progresivo del fondo hacia negro.
 
 ## Compilar y ejecutar
 
@@ -34,4 +42,4 @@ GLFWDemo/src
 2. Selecciona `x64` o `x86` y `Debug` o `Release`.
 3. Compila y ejecuta `GLFWDemo`.
 
-La aplicacion se cierra al cerrar la ventana.
+La aplicacion tambien se puede cerrar usando el boton de cerrar de la ventana.

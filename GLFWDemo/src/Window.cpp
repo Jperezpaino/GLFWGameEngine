@@ -1,7 +1,9 @@
 #include "Window.h"
+#include "KeyListener.h"
 
 #include <iostream>
 #include <stdexcept>
+#include <algorithm>
 
 Window::Window() = default;
 
@@ -13,6 +15,7 @@ Window::~Window() {
 
   if (m_glfwInitialized) {
     glfwTerminate();
+    glfwSetErrorCallback(nullptr);
     m_glfwInitialized = false;
   }
 }
@@ -54,6 +57,8 @@ void Window::init() {
     throw std::runtime_error("Failed to create the GLFW window.");
   }
 
+  glfwSetKeyCallback(m_glfwWindow, KeyListener::keyCallback);
+
   glfwMakeContextCurrent(m_glfwWindow);
   glfwSwapInterval(1);
   glfwShowWindow(m_glfwWindow);
@@ -62,8 +67,27 @@ void Window::init() {
 void Window::loop() {
   while (!glfwWindowShouldClose(m_glfwWindow)) {
     glfwPollEvents();
-    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    processInput();
+    render();
     glfwSwapBuffers(m_glfwWindow);
   }
+}
+
+void Window::processInput() {
+  if (KeyListener::isKeyPressed(GLFW_KEY_ESCAPE)) {
+    glfwSetWindowShouldClose(m_glfwWindow, GLFW_TRUE);
+  }
+  if (KeyListener::isKeyPressed(GLFW_KEY_SPACE)) {
+    m_fadeToBlack = true;
+  }
+}
+
+void Window::render() {
+  glClearColor(m_red, m_green, m_blue, m_alpha);
+  if (m_fadeToBlack) {
+    m_red = std::max((m_red - 0.01f), 0.0f);
+    m_green = std::max((m_green - 0.01f), 0.0f);
+    m_blue = std::max((m_blue - 0.01f), 0.0f);
+  }
+  glClear(GL_COLOR_BUFFER_BIT);
 }

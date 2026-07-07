@@ -25,7 +25,15 @@ class Window {
     GLFWwindow* m_glfwWindow = nullptr;
     bool m_glfwInitialized = false;
 
+    float m_red = 1.0f;
+    float m_green = 1.0f;
+    float m_blue = 1.0f;
+    float m_alpha = 1.0f;
+    bool m_fadeToBlack = false;
+
     void init();
     void loop();
+    void processInput();
+    void render();
 
 };

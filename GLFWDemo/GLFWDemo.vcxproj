@@ -112,6 +112,7 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\KeyListener.cpp" />
+    <ClCompile Include="src\MouseListener.cpp" />
     <ClCompile Include="src\Window.cpp">
       <ObjectFileName>$(IntDir)AppWindow.obj</ObjectFileName>
     </ClCompile>
@@ -184,7 +185,8 @@
     <ClInclude Include="src\Window.h" />
 
     <ClInclude Include="src\Application.h" />
-    <ClInclude Include="src\KeyListener.h" /></ItemGroup>
+    <ClInclude Include="src\KeyListener.h" />
+    <ClInclude Include="src\MouseListener.h" /></ItemGroup>
 <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />
 </Project>

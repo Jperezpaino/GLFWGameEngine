@@ -7,7 +7,7 @@ KeyListener& KeyListener::get() {
 
 void KeyListener::keyCallback(
     GLFWwindow* window,
-    int key,
+    int keyCode,
     int scancode,
     int action,
     int mods) {
@@ -15,17 +15,16 @@ void KeyListener::keyCallback(
   (void)scancode;
   (void)mods;
 
-  if ((key < 0)
-   || (key >= KEY_COUNT)) {
+  if ((keyCode < 0)
+   || (keyCode >= KEY_COUNT)) {
     return;
   }
 
   KeyListener& listener = KeyListener::get();
-
   if (action == GLFW_PRESS) {
-    listener.m_keyPressed[key] = true;
+    listener.m_keyPressed[keyCode] = true;
   } else if (action == GLFW_RELEASE) {
-    listener.m_keyPressed[key] = false;
+    listener.m_keyPressed[keyCode] = false;
   }
 }
 

@@ -7,12 +7,12 @@ class KeyListener {
   public:
 
     KeyListener(const KeyListener&) = delete;
-    KeyListener& operator=(const KeyListener&) = delete;
+    KeyListener& operator = (const KeyListener&) = delete;
     KeyListener(KeyListener&&) = delete;
-    KeyListener& operator=(KeyListener&&) = delete;
+    KeyListener& operator = (KeyListener&&) = delete;
 
     static KeyListener& get();
-    static void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods);
+    static void keyCallback(GLFWwindow* window, int keyCode, int scancode, int action, int mods);
     static bool isKeyPressed(int keyCode);
 
   private:

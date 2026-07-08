@@ -1,6 +1,6 @@
-# Tutorial del proyecto GLFW Game Engine 0.2.0
+# Tutorial del proyecto GLFW Game Engine 0.2.1
 
-Este documento explica la estructura actual del proyecto y el papel de cada parte del codigo. La version `0.2.0` abre una ventana con GLFW, crea un contexto OpenGL basico y usa una clase `KeyListener` para leer el teclado.
+Este documento explica la estructura actual del proyecto y el papel de cada parte del codigo. La version `0.2.1` abre una ventana con GLFW, crea un contexto OpenGL basico y usa listeners propios para leer teclado y raton.
 
 ## 1. Estructura general
 
@@ -16,7 +16,9 @@ GLFW - Demo
 |       |-- Window.h
 |       |-- Window.cpp
 |       |-- KeyListener.h
-|       `-- KeyListener.cpp
+|       |-- KeyListener.cpp
+|       |-- MouseListener.h
+|       `-- MouseListener.cpp
 `-- third_party
     `-- glfw
 ```
@@ -31,11 +33,15 @@ Representa la aplicacion completa. Ahora mismo contiene una unica `Window`, pero
 
 ### `Window`
 
-Representa la ventana GLFW, el contexto OpenGL, el bucle principal, la lectura de input y el render basico.
+Representa la ventana GLFW, el contexto OpenGL, el bucle principal, la lectura de input y el render basico. Tambien conecta los callbacks de GLFW con `KeyListener` y `MouseListener`.
 
 ### `KeyListener`
 
 Representa el estado del teclado. GLFW avisa cuando una tecla se pulsa o se suelta, y `KeyListener` guarda esa informacion para que otras partes del programa puedan consultarla.
+
+### `MouseListener`
+
+Representa el estado de los botones del raton. GLFW avisa cuando un boton se pulsa o se suelta, y `MouseListener` guarda esa informacion igual que `KeyListener` hace con el teclado.
 
 ## 2. `main.cpp`
 
@@ -166,9 +172,10 @@ El destructor libera recursos. Este patron se conoce como RAII: el objeto se enc
 
 ```cpp
 glfwSetKeyCallback(m_glfwWindow, KeyListener::keyCallback);
+glfwSetMouseButtonCallback(m_glfwWindow, MouseListener::mouseButtonCallback);
 ```
 
-Despues de crear la ventana, `Window` registra el callback de teclado. Esta linea conecta GLFW con nuestra clase `KeyListener`.
+Despues de crear la ventana, `Window` registra los callbacks de teclado y raton. Estas lineas conectan GLFW con nuestras clases `KeyListener` y `MouseListener`.
 
 El metodo tambien inicializa GLFW, configura la ventana, crea el contexto OpenGL, activa v-sync con `glfwSwapInterval(1)` y muestra la ventana.
 
@@ -194,16 +201,16 @@ void Window::processInput() {
   if (KeyListener::isKeyPressed(GLFW_KEY_ESCAPE)) {
     glfwSetWindowShouldClose(m_glfwWindow, GLFW_TRUE);
   }
-  if (KeyListener::isKeyPressed(GLFW_KEY_SPACE)) {
+  if (MouseListener::isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
     m_fadeToBlack = true;
   }
 }
 ```
 
-`processInput()` pregunta a `KeyListener` si una tecla esta pulsada.
+`processInput()` pregunta a los listeners si una entrada esta activa.
 
 - `ESC`: marca la ventana para cerrarse.
-- `SPACE`: activa el fundido hacia negro.
+- Clic izquierdo: activa el fundido hacia negro.
 
 ### `render()`
 
@@ -257,7 +264,34 @@ La instancia no se crea con `new`, asi que no hay que liberarla manualmente. C++
 
 `isKeyPressed()` es la parte comoda para el resto del programa: recibe una tecla, por ejemplo `GLFW_KEY_ESCAPE`, y devuelve `true` o `false`.
 
-## 7. Flujo completo
+## 7. `MouseListener`
+
+```cpp
+class MouseListener {
+
+  public:
+
+    static MouseListener& get();
+    static void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
+    static bool isMouseButtonDown(int button);
+
+  private:
+
+    static constexpr int BUTTON_COUNT = GLFW_MOUSE_BUTTON_LAST + 1;
+    bool m_mouseButtonPressed[BUTTON_COUNT] = {};
+
+    MouseListener() = default;
+
+};
+```
+
+`MouseListener` sigue la misma idea que `KeyListener`. Guarda un array de booleanos donde cada posicion indica si un boton del raton esta pulsado.
+
+`mouseButtonCallback()` tiene la firma que GLFW espera para eventos de botones del raton. Si GLFW envia `GLFW_PRESS`, el boton queda marcado como pulsado. Si envia `GLFW_RELEASE`, queda marcado como suelto.
+
+`isMouseButtonDown()` permite consultar el estado desde el resto del programa. En esta demo se usa con `GLFW_MOUSE_BUTTON_LEFT`.
+
+## 8. Flujo completo
 
 ```text
 main()
@@ -268,12 +302,14 @@ main()
               -> inicializa GLFW
               -> crea ventana
               -> registra KeyListener como callback de teclado
+              -> registra MouseListener como callback de raton
               -> activa contexto OpenGL
           -> loop()
               -> glfwPollEvents()
                   -> GLFW llama a KeyListener::keyCallback() si hay eventos de teclado
+                  -> GLFW llama a MouseListener::mouseButtonCallback() si hay eventos de raton
               -> processInput()
-                  -> consulta ESC y SPACE
+                  -> consulta ESC y clic izquierdo
               -> render()
                   -> limpia pantalla con el color actual
               -> glfwSwapBuffers()
@@ -283,7 +319,7 @@ main()
           -> glfwTerminate()
 ```
 
-## 8. Como compilar
+## 9. Como compilar
 
 Desde Visual Studio 2019:
 
@@ -298,22 +334,24 @@ Desde PowerShell:
 & 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe' 'GLFWDemo.sln' /t:Rebuild /p:Configuration=Debug /p:Platform=x64 /m
 ```
 
-## 9. Version 0.2.0
+## 10. Version 0.2.1
 
-La version `0.2.0` incluye:
+La version `0.2.1` incluye:
 
 - Proyecto Visual Studio 2019 en C++17.
 - GLFW 3.4 vendorizado como dependencia local.
 - Clase `Application` como capa principal.
 - Clase `Window` para encapsular GLFW, OpenGL basico, input y render.
 - Clase `KeyListener` para centralizar el estado del teclado.
+- Clase `MouseListener` para centralizar el estado de los botones del raton.
 - Cierre de ventana con `ESC`.
-- Fundido hacia negro al pulsar `SPACE`.
+- Fundido hacia negro con clic izquierdo.
+- Configuracion de Git para mantener UTF-8 y saltos de linea `LF`.
 
-## 10. Siguientes pasos razonables
+## 11. Siguientes pasos razonables
 
 - Crear una clase `Renderer` para separar OpenGL de `Window`.
 - Crear una estructura `WindowConfig` para ancho, alto y titulo.
 - Anadir callback de resize para llamar a `glViewport`.
-- Crear un `MouseListener` siguiendo la misma idea que `KeyListener`.
+- Anadir posicion del cursor al `MouseListener` con `glfwSetCursorPosCallback`.
 - Dibujar un triangulo como primera geometria real.

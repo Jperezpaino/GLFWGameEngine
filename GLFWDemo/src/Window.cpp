@@ -1,5 +1,6 @@
 #include "Window.h"
 #include "KeyListener.h"
+#include "MouseListener.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -58,6 +59,7 @@ void Window::init() {
   }
 
   glfwSetKeyCallback(m_glfwWindow, KeyListener::keyCallback);
+  glfwSetMouseButtonCallback(m_glfwWindow, MouseListener::mouseButtonCallback);
 
   glfwMakeContextCurrent(m_glfwWindow);
   glfwSwapInterval(1);
@@ -77,7 +79,7 @@ void Window::processInput() {
   if (KeyListener::isKeyPressed(GLFW_KEY_ESCAPE)) {
     glfwSetWindowShouldClose(m_glfwWindow, GLFW_TRUE);
   }
-  if (KeyListener::isKeyPressed(GLFW_KEY_SPACE)) {
+  if (MouseListener::isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
     m_fadeToBlack = true;
   }
 }

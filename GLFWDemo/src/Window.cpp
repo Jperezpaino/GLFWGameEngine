@@ -60,6 +60,7 @@ void Window::init() {
 
   glfwSetKeyCallback(m_glfwWindow, KeyListener::keyCallback);
   glfwSetMouseButtonCallback(m_glfwWindow, MouseListener::mouseButtonCallback);
+  glfwSetCursorPosCallback(m_glfwWindow, MouseListener::mousePositionCallback);
 
   glfwMakeContextCurrent(m_glfwWindow);
   glfwSwapInterval(1);
@@ -72,6 +73,7 @@ void Window::loop() {
     processInput();
     render();
     glfwSwapBuffers(m_glfwWindow);
+    MouseListener::update();
   }
 }
 
@@ -79,8 +81,31 @@ void Window::processInput() {
   if (KeyListener::isKeyPressed(GLFW_KEY_ESCAPE)) {
     glfwSetWindowShouldClose(m_glfwWindow, GLFW_TRUE);
   }
+
   if (MouseListener::isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)) {
     m_fadeToBlack = true;
+  }
+
+  if (!m_fadeToBlack) {
+    int windowWidth = 1;
+    int windowHeight = 1;
+    glfwGetWindowSize(m_glfwWindow, &windowWidth, &windowHeight);
+
+    const float x = MouseListener::getXPosition();
+    const float y = MouseListener::getYPosition();
+    const float normalizedX = std::clamp(x / static_cast<float>(std::max(windowWidth, 1)), 0.0f, 1.0f);
+    const float normalizedY = std::clamp(y / static_cast<float>(std::max(windowHeight, 1)), 0.0f, 1.0f);
+
+    m_red = normalizedX;
+    m_green = 1.0f - normalizedY;
+    m_blue = 0.25f + (0.75f * normalizedY);
+  }
+
+  if ((MouseListener::getXDisplacement() != 0.0f)
+   || (MouseListener::getYDisplacement() != 0.0f)) {
+    std::cout << "\rMouse X: " << MouseListener::getXPosition()
+              << " | Mouse Y: " << MouseListener::getYPosition()
+              << "      " << std::flush;
   }
 }
 

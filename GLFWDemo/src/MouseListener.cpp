@@ -5,6 +5,21 @@ MouseListener& MouseListener::get() {
   return instance;
 }
 
+void MouseListener::mousePositionCallback(
+    GLFWwindow* window,
+    double xPosition,
+    double yPosition) {
+  (void)window;
+
+  MouseListener& listener = MouseListener::get();
+
+  listener.m_lastXPosition = listener.m_xPosition;
+  listener.m_lastYPosition = listener.m_yPosition;
+
+  listener.m_xPosition = xPosition;
+  listener.m_yPosition = yPosition;
+}
+
 void MouseListener::mouseButtonCallback(
     GLFWwindow* window,
     int button,
@@ -35,4 +50,31 @@ bool MouseListener::isMouseButtonDown(
 
   MouseListener& listener = MouseListener::get();
   return listener.m_mouseButtonPressed[button];
+}
+
+void MouseListener::update() {
+  MouseListener& listener = MouseListener::get();
+
+  listener.m_lastXPosition = listener.m_xPosition;
+  listener.m_lastYPosition = listener.m_yPosition;
+}
+
+float MouseListener::getXPosition() {
+  MouseListener& listener = MouseListener::get();
+  return static_cast<float>(listener.m_xPosition);
+}
+
+float MouseListener::getYPosition() {
+  MouseListener& listener = MouseListener::get();
+  return static_cast<float>(listener.m_yPosition);
+}
+
+float MouseListener::getXDisplacement() {
+  MouseListener& listener = MouseListener::get();
+  return static_cast<float>(listener.m_xPosition - listener.m_lastXPosition);
+}
+
+float MouseListener::getYDisplacement() {
+  MouseListener& listener = MouseListener::get();
+  return static_cast<float>(listener.m_yPosition - listener.m_lastYPosition);
 }

@@ -6,6 +6,10 @@
       <Extensions>cpp;c;cc;cxx;c++;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
 
+    <Filter Include="Scene Files">
+      <UniqueIdentifier>{D2CCAC6D-3EEB-4ED7-9E49-E4B967F51369}</UniqueIdentifier>
+    </Filter>
+
     <Filter Include="GLFW Source Files">
       <UniqueIdentifier>{5C9A27B0-8AE1-42CB-8D98-BD32A25283C6}</UniqueIdentifier>
     </Filter>
@@ -91,6 +95,12 @@
     <ClCompile Include="src\MouseListener.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\scene\LevelEditorScene.cpp">
+      <Filter>Scene Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scene\LevelScene.cpp">
+      <Filter>Scene Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\util\TimeUtil.cpp">
       <Filter>Source Files</Filter>
     </ClCompile></ItemGroup>
@@ -108,6 +118,15 @@
     </ClInclude>
     <ClInclude Include="src\MouseListener.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\scene\Scene.h">
+      <Filter>Scene Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\scene\LevelEditorScene.h">
+      <Filter>Scene Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\scene\LevelScene.h">
+      <Filter>Scene Files</Filter>
     </ClInclude>
     <ClInclude Include="src\util\TimeUtil.h">
       <Filter>Source Files</Filter>

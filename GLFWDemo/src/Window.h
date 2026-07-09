@@ -1,7 +1,10 @@
 #pragma once
 
 #include <GLFW/glfw3.h>
+#include <memory>
 #include <string>
+
+class Scene;
 
 class Window {
 
@@ -15,9 +18,15 @@ class Window {
     Window(Window&&) = delete;
     Window& operator = (Window&&) = delete;
 
+    static Window& get();
+
     void run();
+    void changeScene(int scene);
+    void setClearColor(float red, float green, float blue, float alpha = 1.0f);
 
   private:
+
+    static Window* s_instance;
 
     int m_width = 1440;
     int m_height = 810;
@@ -25,22 +34,21 @@ class Window {
     GLFWwindow* m_glfwWindow = nullptr;
     bool m_glfwInitialized = false;
 
-    float m_red = 1.0f;
-    float m_green = 1.0f;
-    float m_blue = 1.0f;
+    std::unique_ptr<Scene> m_scene;
+    int m_pendingScene = -1;
+    bool m_isUpdatingScene = false;
+    float m_red = 0.1f;
+    float m_green = 0.1f;
+    float m_blue = 0.1f;
     float m_alpha = 1.0f;
-    float m_colorOffset = 0.0f;
     float m_lastFrameTime = 0.0f;
     float m_deltaTime = 0.0f;
-    float m_timePulse = 0.0f;
-    float m_fpsTimer = 0.0f;
-    int m_frameCount = 0;
-    bool m_fadeToBlack = false;
 
     void init();
     void loop();
     void processInput();
     void render();
     void updateDeltaTime();
+    void loadScene(int scene);
 
 };

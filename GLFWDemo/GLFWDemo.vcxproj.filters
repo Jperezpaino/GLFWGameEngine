@@ -90,6 +90,9 @@
     </ClCompile>
     <ClCompile Include="src\MouseListener.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util\TimeUtil.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile></ItemGroup>
 
   <ItemGroup>
@@ -104,5 +107,8 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\MouseListener.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\util\TimeUtil.h">
       <Filter>Source Files</Filter>
     </ClInclude></ItemGroup></Project>

@@ -1,6 +1,6 @@
-# Tutorial del proyecto GLFW Game Engine 0.2.3
+# Tutorial del proyecto GLFW Game Engine 0.3.0
 
-Este documento explica la estructura actual del proyecto y el papel de cada parte del codigo. La version `0.2.3` abre una ventana con GLFW, crea un contexto OpenGL basico y usa listeners propios para leer teclado, botones del raton, posicion del cursor y scroll.
+Este documento explica la estructura actual del proyecto y el papel de cada parte del codigo. La version `0.3.0` abre una ventana con GLFW, crea un contexto OpenGL basico y usa listeners propios para leer teclado, botones del raton, posicion del cursor, scroll y delta time.
 
 ## 1. Estructura general
 
@@ -18,7 +18,10 @@ GLFW - Demo
 |       |-- KeyListener.h
 |       |-- KeyListener.cpp
 |       |-- MouseListener.h
-|       `-- MouseListener.cpp
+|       |-- MouseListener.cpp
+|       `-- util
+|           |-- TimeUtil.h
+|           `-- TimeUtil.cpp
 `-- third_party
     `-- glfw
 ```
@@ -33,7 +36,7 @@ Representa la aplicacion completa. Ahora mismo contiene una unica `Window`, pero
 
 ### `Window`
 
-Representa la ventana GLFW, el contexto OpenGL, el bucle principal, la lectura de input y el render basico. Tambien conecta los callbacks de GLFW con `KeyListener` y `MouseListener`.
+Representa la ventana GLFW, el contexto OpenGL, el bucle principal, la lectura de input, el calculo de tiempo y el render basico. Tambien conecta los callbacks de GLFW con `KeyListener` y `MouseListener`.
 
 ### `KeyListener`
 
@@ -42,6 +45,10 @@ Representa el estado del teclado. GLFW avisa cuando una tecla se pulsa o se suel
 ### `MouseListener`
 
 Representa el estado del raton. Guarda botones pulsados, posicion actual, desplazamiento entre frames y desplazamiento de scroll. Asi `Window` puede consultar el raton sin hablar directamente con la API de GLFW en cada sitio.
+
+### `TimeUtil`
+
+Representa una utilidad de tiempo del motor. Usa `std::chrono::steady_clock` para medir tiempo transcurrido, calcular `deltaTime` y pausar en milisegundos sin depender de cambios del reloj del sistema.
 
 ## 2. `main.cpp`
 
@@ -122,12 +129,18 @@ class Window {
     float m_green = 1.0f;
     float m_blue = 1.0f;
     float m_alpha = 1.0f;
+    float m_lastFrameTime = 0.0f;
+    float m_deltaTime = 0.0f;
+    float m_timePulse = 0.0f;
+    float m_fpsTimer = 0.0f;
+    int m_frameCount = 0;
     bool m_fadeToBlack = false;
 
     void init();
     void loop();
     void processInput();
     void render();
+    void updateDeltaTime();
 
 };
 ```
@@ -142,6 +155,9 @@ El orden busca ser familiar si vienes de Java: primero la parte publica, despues
 - `m_glfwInitialized`: indica si `glfwInit()` funciono, para saber si hay que llamar a `glfwTerminate()`.
 - `m_red`, `m_green`, `m_blue` y `m_alpha`: color actual con el que se limpia la pantalla.
 - `m_fadeToBlack`: indica si el fondo debe empezar a oscurecerse.
+- `m_deltaTime`: tiempo transcurrido desde el frame anterior.
+- `m_timePulse`: acumulador usado para animar un pulso suave del fondo.
+- `m_fpsTimer` y `m_frameCount`: ayudan a mostrar FPS y delta time por consola.
 
 ## 5. `Window.cpp`
 
@@ -186,6 +202,7 @@ El metodo tambien inicializa GLFW, configura la ventana, crea el contexto OpenGL
 ```cpp
 void Window::loop() {
   while (!glfwWindowShouldClose(m_glfwWindow)) {
+    updateDeltaTime();
     glfwPollEvents();
     processInput();
     render();
@@ -195,7 +212,7 @@ void Window::loop() {
 }
 ```
 
-Este es el bucle principal. Cada vuelta procesa eventos, interpreta el input, renderiza un frame, presenta ese frame en pantalla y sincroniza el estado anterior del raton.
+Este es el bucle principal. Cada vuelta calcula `deltaTime`, procesa eventos, interpreta el input, renderiza un frame, presenta ese frame en pantalla y sincroniza el estado anterior del raton.
 
 ### `processInput()`
 
@@ -243,15 +260,16 @@ La demo tambien escribe la posicion del raton y el desplazamiento de color en co
 void Window::render() {
   glClearColor(m_red, m_green, m_blue, m_alpha);
   if (m_fadeToBlack) {
-    m_red = std::max((m_red - 0.01f), 0.0f);
-    m_green = std::max((m_green - 0.01f), 0.0f);
-    m_blue = std::max((m_blue - 0.01f), 0.0f);
+    const float fadeSpeed = 0.75f;
+    m_red = std::max((m_red - (fadeSpeed * m_deltaTime)), 0.0f);
+    m_green = std::max((m_green - (fadeSpeed * m_deltaTime)), 0.0f);
+    m_blue = std::max((m_blue - (fadeSpeed * m_deltaTime)), 0.0f);
   }
   glClear(GL_COLOR_BUFFER_BIT);
 }
 ```
 
-`render()` define el color de limpieza y limpia la pantalla. Si `m_fadeToBlack` esta activo, reduce los componentes rojo, verde y azul poco a poco hasta llegar a `0.0f`.
+`render()` define el color de limpieza y limpia la pantalla. Si `m_fadeToBlack` esta activo, reduce los componentes rojo, verde y azul usando `deltaTime`, por lo que el fundido mantiene una velocidad estable aunque cambien los FPS.
 
 ## 6. `KeyListener`
 
@@ -328,7 +346,32 @@ class MouseListener {
 
 `update()` copia la posicion actual a la posicion anterior al final del frame. Esto permite que `getXDisplacement()` y `getYDisplacement()` representen el movimiento producido desde el frame anterior.
 
-## 8. Flujo completo
+## 8. `TimeUtil`
+
+```cpp
+class TimeUtil {
+
+  public:
+
+    static void init();
+    static float getTime();
+    static float getTimeMillis();
+    static long long getTimeNanos();
+    static void sleep(float milliseconds);
+    static float deltaTime(float previousTime);
+
+  private:
+
+    static std::chrono::steady_clock::time_point timeStarted;
+
+};
+```
+
+`TimeUtil::init()` marca el inicio del contador. `getTime()` devuelve segundos desde ese inicio, y `deltaTime(previousTime)` permite calcular cuanto tiempo ha pasado desde una marca anterior.
+
+En esta demo, `Window::updateDeltaTime()` calcula `m_deltaTime` cada frame, actualiza un pulso visual y muestra FPS por consola una vez por segundo.
+
+## 9. Flujo completo
 
 ```text
 main()
@@ -343,6 +386,7 @@ main()
               -> registra MouseListener como callback de posicion del cursor
               -> activa contexto OpenGL
           -> loop()
+              -> updateDeltaTime()
               -> glfwPollEvents()
                   -> GLFW llama a KeyListener::keyCallback() si hay eventos de teclado
                   -> GLFW llama a MouseListener::mouseButtonCallback() si hay botones de raton
@@ -359,7 +403,7 @@ main()
           -> glfwTerminate()
 ```
 
-## 9. Como compilar
+## 10. Como compilar
 
 Desde Visual Studio 2019:
 
@@ -374,9 +418,9 @@ Desde PowerShell:
 & 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe' 'GLFWDemo.sln' /t:Rebuild /p:Configuration=Debug /p:Platform=x64 /m
 ```
 
-## 10. Version 0.2.3
+## 11. Version 0.3.0
 
-La version `0.2.3` incluye:
+La version `0.3.0` incluye:
 
 - Proyecto Visual Studio 2019 en C++17.
 - GLFW 3.4 vendorizado como dependencia local.
@@ -384,17 +428,21 @@ La version `0.2.3` incluye:
 - Clase `Window` para encapsular GLFW, OpenGL basico, input y render.
 - Clase `KeyListener` para centralizar el estado del teclado.
 - Clase `MouseListener` para centralizar botones, posicion, desplazamiento y scroll del raton.
+- Clase `TimeUtil` para centralizar tiempo, delta time y pausas.
 - Cierre de ventana con `ESC`.
 - Fundido hacia negro con clic izquierdo.
 - Color de fondo reactivo a la posicion del raton.
 - Scroll vertical para subir o bajar la intensidad de los colores.
-- Salida por consola con la posicion actual del raton y el desplazamiento de color.
+- Pulso visual basado en tiempo.
+- Fundido a negro independiente de FPS usando `deltaTime`.
+- Salida por consola con FPS, `dt`, posicion actual del raton y desplazamiento de color.
 - Configuracion de Git para mantener UTF-8 y saltos de linea `LF`.
 
-## 11. Siguientes pasos razonables
+## 12. Siguientes pasos razonables
 
 - Crear una clase `Renderer` para separar OpenGL de `Window`.
 - Crear una estructura `WindowConfig` para ancho, alto y titulo.
 - Anadir callback de resize para llamar a `glViewport`.
+- Crear el sistema de escenas sobre el bucle con `deltaTime`.
 - Usar el desplazamiento del raton para mover una camara 2D.
 - Dibujar un triangulo como primera geometria real.

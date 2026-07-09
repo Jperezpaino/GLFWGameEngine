@@ -30,11 +30,17 @@ class Window {
     float m_blue = 1.0f;
     float m_alpha = 1.0f;
     float m_colorOffset = 0.0f;
+    float m_lastFrameTime = 0.0f;
+    float m_deltaTime = 0.0f;
+    float m_timePulse = 0.0f;
+    float m_fpsTimer = 0.0f;
+    int m_frameCount = 0;
     bool m_fadeToBlack = false;
 
     void init();
     void loop();
     void processInput();
     void render();
+    void updateDeltaTime();
 
 };

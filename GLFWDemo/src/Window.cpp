@@ -131,6 +131,10 @@ void Window::processInput() {
 void Window::render() {
   glClearColor(m_red, m_green, m_blue, m_alpha);
   glClear(GL_COLOR_BUFFER_BIT);
+
+  if (m_scene != nullptr) {
+    m_scene->render();
+  }
 }
 
 void Window::updateDeltaTime() {
@@ -161,6 +165,10 @@ void Window::loadScene(
     default:
       assert(false && "Unknown scene");
       break;
+  }
+
+  if (m_scene != nullptr) {
+    m_scene->init();
   }
 }
 

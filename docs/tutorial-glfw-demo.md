@@ -1,21 +1,20 @@
-# Tutorial del proyecto GLFW Game Engine 0.3.1
+# Tutorial del proyecto GLFW Game Engine 0.4.0
 
-Este documento explica con detalle la estructura actual del proyecto. La version `0.3.1` marca un cambio importante respecto a las demos anteriores: la logica deja de vivir dentro de `Window` y empieza a organizarse en escenas.
+Este documento explica la estructura actual del proyecto. La version `0.4.0` da un paso importante: las escenas ya no solo actualizan logica, tambien dibujan contenido propio. La demo actual alterna entre una escena con un cuadrado y otra escena con un triangulo, usando `deltaTime` para realizar transiciones suaves de color de fondo.
 
-La idea principal es que `Window` actue como base del motor: crea la ventana, registra callbacks, calcula `deltaTime`, ejecuta el bucle principal y llama a la escena activa. La logica concreta, como una pantalla de editor o una pantalla de juego, vive en clases que heredan de `Scene`.
+## 1. Objetivo de la version 0.4.0
 
-## 1. Objetivo de la version 0.3.1
+La rama `0.3.x` dejo preparado el sistema de escenas y el calculo de `deltaTime`. La version `0.4.0` completa esa base con una demo visual clara:
 
-Hasta ahora el proyecto habia servido para probar piezas individuales de GLFW: teclado, raton, scroll, posicion del cursor y tiempo. Eso fue util para aprender la API, pero no era una buena estructura a largo plazo, porque `Window` acababa teniendo demasiadas responsabilidades.
+- `Scene` tiene tres fases: `init()`, `update(deltaTime)` y `render()`.
+- `Window` mantiene el bucle principal y delega la logica y el dibujo en la escena activa.
+- `LevelEditorScene` dibuja un cuadrado.
+- `LevelScene` dibuja un triangulo.
+- `ESPACIO` inicia una transicion temporizada hacia la otra escena.
+- El fondo cambia suavemente usando interpolacion y `deltaTime`.
+- `ESC` sigue cerrando la ventana desde el input global.
 
-En `0.3.1` el objetivo es limpiar esa fase de pruebas y dejar una base mas parecida a un motor pequeno:
-
-- `Window` controla el ciclo de vida de GLFW.
-- `Window` calcula `deltaTime` una vez por frame.
-- `Scene` define donde vive la logica del programa.
-- `LevelEditorScene` y `LevelScene` son las primeras escenas concretas.
-- El cambio de escena es seguro incluso si se solicita dentro de `update()`.
-- La documentacion ya describe el sistema actual, no las demos antiguas.
+El objetivo no es todavia tener OpenGL moderno con shaders. El objetivo de esta version es entender bien el ciclo basico de escena: inicializar, actualizar, renderizar y cambiar de escena.
 
 ## 2. Estructura general
 
@@ -50,11 +49,9 @@ GLFW - Demo
     `-- glfw
 ```
 
-La carpeta `src` contiene el codigo propio del proyecto. La carpeta `third_party/glfw` contiene GLFW vendorizado, es decir, copiado dentro del repositorio para que Visual Studio pueda compilarlo junto al proyecto sin depender de una libreria externa generada a mano.
+La carpeta `src` contiene el codigo propio del proyecto. La carpeta `third_party/glfw` contiene GLFW vendorizado y compilado junto al proyecto.
 
 ## 3. Flujo completo de ejecucion
-
-El programa arranca en `main.cpp`, crea una `Application`, la aplicacion ejecuta su `Window`, y `Window` se queda dentro del bucle principal hasta que la ventana se cierra.
 
 ```text
 main()
@@ -66,13 +63,15 @@ main()
               -> crea la ventana
               -> registra callbacks
               -> crea la primera escena
+              -> llama a scene.init()
           -> loop()
               -> calcula deltaTime
               -> procesa eventos de GLFW
               -> procesa input global
-              -> actualiza la escena activa
+              -> scene.update(deltaTime)
               -> aplica cambio de escena pendiente
-              -> renderiza
+              -> limpia pantalla
+              -> scene.render()
               -> presenta el frame
   -> se destruye Application
       -> se destruye Window
@@ -81,16 +80,13 @@ main()
           -> termina GLFW
 ```
 
-Este esquema es importante porque ayuda a separar responsabilidades. `main()` no sabe nada de GLFW, `Application` no sabe como se renderiza, y las escenas no tienen que crear la ventana.
+La idea importante es que `Window` sostiene el motor, pero la logica visual concreta pertenece a las escenas.
 
 ## 4. `main.cpp`
 
+`main.cpp` se mantiene pequeno:
+
 ```cpp
-#include "Application.h"
-
-#include <exception>
-#include <iostream>
-
 int main() {
   try {
     Application application;
@@ -104,17 +100,11 @@ int main() {
 }
 ```
 
-`main()` se mantiene pequeno a proposito. En C++, `main()` debe ser una funcion libre, no un metodo de clase como podria imaginar alguien que viene de Java.
-
-Sus responsabilidades son solo tres:
-
-- Crear la aplicacion.
-- Ejecutarla.
-- Capturar errores graves y devolver un codigo de salida.
-
-El bloque `try/catch` permite mostrar por consola cualquier `std::exception` lanzada durante la inicializacion o ejecucion. Por ejemplo, si GLFW no pudiera inicializarse, `Window` lanza una excepcion y `main()` la muestra.
+`main()` crea la aplicacion, la ejecuta y captura errores graves. Esto mantiene el punto de entrada limpio y deja el resto del programa dentro de clases propias.
 
 ## 5. `Application`
+
+`Application` posee una unica `Window`:
 
 ```cpp
 class Application {
@@ -137,273 +127,28 @@ class Application {
 };
 ```
 
-`Application` representa la aplicacion completa. Ahora mismo solo contiene una `Window`, pero ya sirve como punto de ampliacion natural.
+Las operaciones de copia y movimiento se borran porque `Window` gestiona recursos nativos. Evitar copias accidentales es una practica sana en C++ cuando una clase posee recursos.
 
-Mas adelante podria coordinar:
+## 6. Responsabilidad de `Window`
 
-- Configuracion global.
-- Sistema de recursos.
-- Audio.
-- Renderizado.
-- Gestor de escenas.
-- Sistemas de debug.
+`Window` encapsula:
 
-Las operaciones de copia y movimiento estan borradas con `= delete`. Esto evita copiar accidentalmente una `Application`, lo cual copiaria tambien una `Window` que gestiona recursos nativos de GLFW. Es una decision defensiva y muy comun en C++ moderno cuando una clase posee recursos.
+- Inicializacion y finalizacion de GLFW.
+- Creacion de ventana.
+- Contexto OpenGL.
+- Registro de callbacks.
+- Bucle principal.
+- Calculo de `deltaTime`.
+- Input global.
+- Escena activa.
+- Cambio diferido de escena.
+- Limpieza de pantalla.
 
-## 6. `Window`: papel general
+`Window` no contiene ya reglas de demo como dibujar un cuadrado o un triangulo. Eso vive en las escenas.
 
-`Window` es la clase mas importante de esta fase. Su trabajo no es contener la logica del juego, sino sostener el entorno donde esa logica se ejecuta.
+## 7. Bucle principal
 
-Responsabilidades actuales de `Window`:
-
-- Inicializar y terminar GLFW.
-- Crear y destruir la ventana nativa.
-- Crear el contexto OpenGL.
-- Registrar callbacks de teclado y raton.
-- Ejecutar el bucle principal.
-- Calcular `deltaTime`.
-- Gestionar input global, como `ESC` para cerrar.
-- Poseer la escena activa.
-- Cambiar de escena de forma segura.
-- Limpiar la pantalla con un color base.
-
-Lo que ya no debe hacer `Window`:
-
-- Contener demos especificas de raton.
-- Contener reglas de juego.
-- Contener logica de editor.
-- Contener animaciones concretas que pertenezcan a una escena.
-
-Esta separacion es el cambio mas importante de `0.3.1`.
-
-## 7. Instancia actual de `Window`
-
-`Window` contiene un puntero estatico privado:
-
-```cpp
-static Window* s_instance;
-```
-
-Y expone:
-
-```cpp
-static Window& get();
-```
-
-Esto permite que una escena haga cosas como:
-
-```cpp
-Window::get().setClearColor(0.50f, 0.50f, 0.50f);
-Window::get().changeScene(1);
-```
-
-Para este proyecto, esta solucion es sencilla y facil de seguir. Es parecida a tener una referencia global controlada a la ventana principal.
-
-Hay dos protecciones importantes:
-
-- El constructor lanza error si ya existe otra `Window`.
-- `Window::get()` lanza error si se llama antes de crear la ventana.
-
-No es necesariamente la arquitectura final de un motor grande, pero es perfectamente razonable para una demo educativa. Cuando el proyecto crezca, esta idea puede evolucionar a un `SceneManager`, un `EngineContext` o dependencias pasadas por constructor.
-
-## 8. Ciclo de vida de `Window`
-
-El constructor registra la instancia:
-
-```cpp
-Window::Window() {
-  if (s_instance != nullptr) {
-    throw std::runtime_error("Only one Window instance can exist.");
-  }
-
-  s_instance = this;
-}
-```
-
-El destructor libera en orden:
-
-```cpp
-Window::~Window() {
-  m_scene.reset();
-
-  if (m_glfwWindow != nullptr) {
-    glfwDestroyWindow(m_glfwWindow);
-    m_glfwWindow = nullptr;
-  }
-
-  if (m_glfwInitialized) {
-    glfwTerminate();
-    glfwSetErrorCallback(nullptr);
-    m_glfwInitialized = false;
-  }
-
-  if (s_instance == this) {
-    s_instance = nullptr;
-  }
-}
-```
-
-El orden importa:
-
-- Primero se destruye la escena activa.
-- Luego se destruye la ventana nativa de GLFW.
-- Despues se termina GLFW.
-- Finalmente se limpia la instancia estatica.
-
-Este patron encaja con RAII: los recursos se adquieren al crear/inicializar objetos y se liberan automaticamente al destruirlos.
-
-## 9. Inicializacion de GLFW
-
-`Window::init()` configura y crea la ventana.
-
-Puntos clave:
-
-```cpp
-glfwSetErrorCallback(...);
-```
-
-Registra una funcion para imprimir errores internos de GLFW.
-
-```cpp
-if (!glfwInit()) {
-  throw std::runtime_error("Unable to initialize GLFW.");
-}
-```
-
-Inicializa GLFW. Si falla, se lanza una excepcion.
-
-```cpp
-glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
-glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
-```
-
-Configura pistas de la ventana antes de crearla. En este caso se crea oculta, redimensionable y maximizada.
-
-```cpp
-m_glfwWindow = glfwCreateWindow(...);
-```
-
-Crea la ventana nativa.
-
-```cpp
-glfwMakeContextCurrent(m_glfwWindow);
-glfwSwapInterval(1);
-glfwShowWindow(m_glfwWindow);
-```
-
-Activa el contexto OpenGL, habilita v-sync y muestra la ventana.
-
-Al final se crea la primera escena:
-
-```cpp
-changeScene(0);
-```
-
-Actualmente el id `0` significa `LevelEditorScene`.
-
-## 10. Callbacks de input
-
-`Window::init()` conecta GLFW con nuestras clases listener:
-
-```cpp
-glfwSetKeyCallback(m_glfwWindow, KeyListener::keyCallback);
-glfwSetMouseButtonCallback(m_glfwWindow, MouseListener::mouseButtonCallback);
-glfwSetCursorPosCallback(m_glfwWindow, MouseListener::mousePositionCallback);
-glfwSetScrollCallback(m_glfwWindow, MouseListener::mouseScrollCallback);
-```
-
-GLFW trabaja por callbacks: cuando ocurre un evento, llama a una funcion. En vez de repartir logica por todo el proyecto, los callbacks actualizan `KeyListener` y `MouseListener`.
-
-Luego cualquier clase puede preguntar:
-
-```cpp
-KeyListener::isKeyPressed(GLFW_KEY_SPACE)
-MouseListener::getXPosition()
-MouseListener::isMouseButtonDown(GLFW_MOUSE_BUTTON_LEFT)
-```
-
-Ahora mismo `LevelEditorScene` usa teclado para detectar `ESPACIO`, y `Window` usa teclado para cerrar con `ESC`. El raton queda preparado para futuras escenas.
-
-## 11. `TimeUtil`
-
-`TimeUtil` centraliza el reloj base del motor.
-
-```cpp
-class TimeUtil {
-
-  public:
-
-    static void init();
-    static float getTime();
-
-  private:
-
-    static std::chrono::steady_clock::time_point m_timeStarted;
-
-};
-```
-
-`std::chrono::steady_clock` es apropiado para medir duraciones porque es monotono. Eso significa que no depende de cambios en la hora del sistema.
-
-`init()` guarda el instante inicial:
-
-```cpp
-void TimeUtil::init() {
-  m_timeStarted = std::chrono::steady_clock::now();
-}
-```
-
-`getTime()` devuelve los segundos transcurridos desde ese instante:
-
-```cpp
-float TimeUtil::getTime() {
-  const auto now = std::chrono::steady_clock::now();
-  const auto elapsed = now - m_timeStarted;
-  return std::chrono::duration<float>(elapsed).count();
-}
-```
-
-Se han eliminado metodos que no se usaban (`getTimeMillis`, `getTimeNanos`, `sleep`, `deltaTime`) para mantener la clase minima y clara.
-
-## 12. `deltaTime`
-
-`deltaTime` representa cuanto tiempo ha pasado desde el frame anterior. Es fundamental para que animaciones, movimientos y temporizadores no dependan de los FPS.
-
-En `Window::loop()` se inicializa el reloj antes de entrar al bucle:
-
-```cpp
-TimeUtil::init();
-m_lastFrameTime = TimeUtil::getTime();
-```
-
-Cada frame se calcula asi:
-
-```cpp
-void Window::updateDeltaTime() {
-  const float currentTime = TimeUtil::getTime();
-  m_deltaTime = currentTime - m_lastFrameTime;
-  m_lastFrameTime = currentTime;
-}
-```
-
-Ejemplo conceptual:
-
-- Si un frame tarda `0.016`, eso equivale aproximadamente a 60 FPS.
-- Si un frame tarda `0.033`, eso equivale aproximadamente a 30 FPS.
-- Si una transicion resta `deltaTime`, durara lo mismo en ambos casos.
-
-Por eso la escena recibe:
-
-```cpp
-m_scene->update(m_deltaTime);
-```
-
-Y no simplemente `m_scene->update()`.
-
-## 13. Bucle principal de `Window`
-
-El bucle principal completo tiene esta estructura:
+El bucle principal esta en `Window::loop()`:
 
 ```cpp
 while (!glfwWindowShouldClose(m_glfwWindow)) {
@@ -428,64 +173,37 @@ while (!glfwWindowShouldClose(m_glfwWindow)) {
 }
 ```
 
-Orden explicado paso a paso:
+El orden es deliberado:
 
-- `updateDeltaTime()`: calcula el tiempo entre frames.
-- `glfwPollEvents()`: permite que GLFW procese eventos pendientes.
-- `processInput()`: procesa input global del motor.
-- `m_scene->update(m_deltaTime)`: ejecuta la logica de la escena activa.
-- Bloque de `m_pendingScene`: aplica un cambio de escena pedido durante `update()`.
-- `render()`: limpia la pantalla.
-- `glfwSwapBuffers()`: presenta el frame calculado.
-- `MouseListener::update()`: prepara el estado del raton para el siguiente frame.
+- Primero se calcula `deltaTime`.
+- Despues GLFW procesa eventos.
+- Luego se procesa input global.
+- La escena actualiza su logica.
+- Si una escena pidio cambiar a otra, el cambio se aplica al salir de `update()`.
+- Se renderiza el frame.
+- Se muestran los buffers.
+- Se cierra el estado temporal del raton.
 
-Este bucle es ya una base muy reconocible para un juego o motor pequeno.
+## 8. Render en `Window`
 
-## 14. Input global
-
-`Window::processInput()` contiene solo input que pertenece al motor o a la ventana, no a una escena concreta.
-
-```cpp
-void Window::processInput() {
-  if (KeyListener::isKeyPressed(GLFW_KEY_ESCAPE)) {
-    glfwSetWindowShouldClose(m_glfwWindow, GLFW_TRUE);
-  }
-}
-```
-
-`ESC` es global porque cerrar la ventana no depende de estar en editor o en juego.
-
-En cambio, `ESPACIO` para cambiar de escena vive en `LevelEditorScene`, porque es una regla de esa escena concreta.
-
-Esta separacion es importante:
-
-- Input global: `Window`.
-- Input especifico de una pantalla: escena.
-
-## 15. Render basico
-
-El render actual sigue siendo muy sencillo:
+`Window::render()` limpia la pantalla y despues deja dibujar a la escena:
 
 ```cpp
 void Window::render() {
   glClearColor(m_red, m_green, m_blue, m_alpha);
   glClear(GL_COLOR_BUFFER_BIT);
+
+  if (m_scene != nullptr) {
+    m_scene->render();
+  }
 }
 ```
 
-`glClearColor` define el color de limpieza y `glClear(GL_COLOR_BUFFER_BIT)` limpia el buffer de color.
+Este orden es importante. Si la escena dibujara antes de `glClear`, el dibujo se borraria antes de llegar a pantalla.
 
-Las escenas todavia no dibujan geometria real. Por ahora cambian el color de fondo mediante:
+## 9. Contrato de `Scene`
 
-```cpp
-Window::get().setClearColor(red, green, blue);
-```
-
-Esto permite comprobar visualmente que la escena activa influye en el frame.
-
-## 16. `Scene`
-
-`Scene` es una interfaz en estilo C++: una clase base abstracta con un metodo virtual puro.
+`Scene` define la interfaz comun:
 
 ```cpp
 class Scene {
@@ -495,260 +213,199 @@ class Scene {
     Scene() = default;
     virtual ~Scene() = default;
 
+    virtual void init() {}
     virtual void update(float deltaTime) = 0;
+    virtual void render() {}
 
 };
 ```
 
-Detalles importantes:
+- `init()` se llama al cargar la escena. Es opcional.
+- `update(float deltaTime)` es obligatorio y contiene logica.
+- `render()` es opcional y contiene dibujo.
 
-- `virtual ~Scene() = default;` permite destruir escenas derivadas desde un puntero `Scene*` o `std::unique_ptr<Scene>`.
-- `update(float deltaTime) = 0;` obliga a cada escena concreta a implementar su logica.
-- Al ser abstracta, no se puede crear un objeto `Scene` directamente.
+Esta separacion es muy habitual en juegos y motores pequenos: actualizar estado y dibujar estado son fases diferentes.
 
-Por eso `Window` guarda:
+## 10. Carga y cambio de escena
+
+`Window` guarda la escena activa con:
 
 ```cpp
 std::unique_ptr<Scene> m_scene;
 ```
 
-Y crea escenas concretas:
+Cuando carga una escena, crea una clase concreta y llama a `init()`:
 
 ```cpp
-m_scene = std::make_unique<LevelEditorScene>();
-m_scene = std::make_unique<LevelScene>();
-```
-
-## 17. `LevelEditorScene`
-
-`LevelEditorScene` es la primera escena activa.
-
-Estado interno:
-
-```cpp
-bool m_changingScene = false;
-float m_timeToChangeScene = 2.0f;
-```
-
-- `m_changingScene`: indica si la transicion ya empezo.
-- `m_timeToChangeScene`: tiempo restante antes de cambiar a `LevelScene`.
-
-Constructor:
-
-```cpp
-LevelEditorScene::LevelEditorScene() {
-  std::cout << "Inside level editor scene" << std::endl;
-  Window::get().setClearColor(0.50f, 0.50f, 0.50f);
-}
-```
-
-Al entrar en la escena, escribe en consola y define un color gris inicial.
-
-Update:
-
-```cpp
-void LevelEditorScene::update(float deltaTime) {
-  if (!m_changingScene && KeyListener::isKeyPressed(GLFW_KEY_SPACE)) {
-    m_changingScene = true;
-    std::cout << "Iniciando transicion a la escena de juego..." << std::endl;
-  }
-
-  if (!m_changingScene) {
-    return;
-  }
-
-  m_timeToChangeScene -= deltaTime;
-
-  const float transitionProgress = std::clamp(1.0f - m_timeToChangeScene, 0.0f, 1.0f);
-  const float color = 0.18f * (1.0f - transitionProgress);
-  Window::get().setClearColor(color, color, color);
-
-  if (m_timeToChangeScene <= 0.0f) {
-    Window::get().changeScene(1);
-  }
-}
-```
-
-La primera parte detecta `ESPACIO`. Si todavia no estaba cambiando de escena, activa la transicion.
-
-La segunda parte sale inmediatamente si la transicion no ha empezado. Esto mantiene el metodo facil de leer.
-
-Cuando la transicion esta activa, se resta `deltaTime` al contador. Al llegar a cero, se pide cambiar a la escena `1`, que actualmente es `LevelScene`.
-
-## 18. `LevelScene`
-
-`LevelScene` representa la escena de juego. Ahora mismo es minima:
-
-```cpp
-LevelScene::LevelScene() {
-  std::cout << "Inside level scene" << std::endl;
-  Window::get().setClearColor(1.0f, 1.0f, 1.0f);
+switch (scene) {
+  case 0:
+    m_scene = std::make_unique<LevelEditorScene>();
+    break;
+  case 1:
+    m_scene = std::make_unique<LevelScene>();
+    break;
 }
 
-void LevelScene::update(float) {
-}
-```
-
-El constructor muestra un mensaje y cambia el fondo a blanco.
-
-`update(float)` no usa todavia `deltaTime`, pero mantiene la firma exigida por `Scene`. Dejar el parametro sin nombre evita advertencias por variable no usada y comunica que la escena todavia no necesita ese valor.
-
-## 19. Cambio de escena
-
-El cambio de escena se solicita con:
-
-```cpp
-Window::get().changeScene(1);
-```
-
-`Window::changeScene()` decide si puede cargar la escena inmediatamente o si debe esperar.
-
-```cpp
-void Window::changeScene(int scene) {
-  if (m_isUpdatingScene) {
-    m_pendingScene = scene;
-    return;
-  }
-
-  loadScene(scene);
-}
-```
-
-Si no estamos dentro de `Scene::update()`, se llama directamente a `loadScene(scene)`.
-
-Si estamos dentro de `Scene::update()`, se guarda el id en `m_pendingScene`. Esto evita destruir una escena mientras aun se esta ejecutando codigo de esa misma escena.
-
-Despues del `update`, el bucle principal aplica el cambio:
-
-```cpp
-if (m_pendingScene >= 0) {
-  loadScene(m_pendingScene);
-  m_pendingScene = -1;
-}
-```
-
-## 20. `loadScene()`
-
-`loadScene()` contiene el mapeo actual entre ids y clases:
-
-```cpp
-void Window::loadScene(int scene) {
-  switch (scene) {
-    case 0:
-      m_scene = std::make_unique<LevelEditorScene>();
-      break;
-    case 1:
-      m_scene = std::make_unique<LevelScene>();
-      break;
-    default:
-      assert(false && "Unknown scene");
-      break;
-  }
+if (m_scene != nullptr) {
+  m_scene->init();
 }
 ```
 
 Actualmente:
 
-- `0`: `LevelEditorScene`.
-- `1`: `LevelScene`.
+- `0`: `LevelEditorScene`, la escena del cuadrado.
+- `1`: `LevelScene`, la escena del triangulo.
 
-Esto funciona, pero no es la forma mas expresiva. Un siguiente paso razonable seria cambiar esos numeros por un `enum class`, por ejemplo:
+Si una escena pide cambiar durante `update()`, `Window` no destruye la escena inmediatamente. Guarda el cambio en `m_pendingScene` y lo aplica justo despues de terminar `update()`. Esto evita destruir un objeto mientras aun se esta ejecutando un metodo suyo.
 
-```cpp
-enum class SceneType {
-  LevelEditor,
-  Level
-};
-```
+## 11. `deltaTime`
 
-Asi el codigo seria mas legible y menos propenso a errores.
-
-## 21. `KeyListener`
-
-`KeyListener` mantiene el estado de las teclas.
-
-GLFW llama a este callback:
+`deltaTime` es el tiempo transcurrido desde el frame anterior.
 
 ```cpp
-static void keyCallback(GLFWwindow* window, int keyCode, int scancode, int action, int mods);
+void Window::updateDeltaTime() {
+  const float currentTime = TimeUtil::getTime();
+  m_deltaTime = currentTime - m_lastFrameTime;
+  m_lastFrameTime = currentTime;
+}
 ```
 
-Cuando una tecla se pulsa, se marca como `true`. Cuando se suelta, se marca como `false`.
+Las escenas lo reciben en `update(float deltaTime)`. En `0.4.0` se usa para temporizar transiciones de fondo. Asi la transicion dura aproximadamente lo mismo independientemente de si la aplicacion corre a 30, 60 o mas FPS.
 
-El resto del codigo no necesita saber como funciona GLFW por dentro. Puede preguntar:
+## 12. Transicion suave de fondo
+
+Cada escena tiene:
 
 ```cpp
-KeyListener::isKeyPressed(GLFW_KEY_ESCAPE)
-KeyListener::isKeyPressed(GLFW_KEY_SPACE)
+bool m_changingScene = false;
+float m_timeToChangeScene = 1.0f;
 ```
 
-Esto hace que el input sea mas facil de leer desde `Window` o desde una escena.
+Cuando se pulsa `ESPACIO`, la escena activa `m_changingScene`. A partir de ese momento resta `deltaTime` al contador.
 
-## 22. `MouseListener`
-
-`MouseListener` mantiene estado de raton:
-
-- Botones pulsados.
-- Posicion X/Y.
-- Desplazamiento X/Y entre frames.
-- Scroll X/Y.
-- Estado de arrastre.
-
-Aunque ahora mismo ninguna escena lo usa de forma visible, se mantiene porque es infraestructura del motor. Las demos antiguas ya demostraron que funciona y las proximas escenas podran consultar esa informacion.
-
-La llamada importante al final del frame es:
+El progreso se calcula asi:
 
 ```cpp
-MouseListener::update();
+const float transitionDuration = 1.0f;
+const float transitionProgress = std::clamp(
+  1.0f - (m_timeToChangeScene / transitionDuration),
+  0.0f,
+  1.0f
+);
 ```
 
-Esto copia la posicion actual como posicion anterior y resetea el scroll del frame. Por eso debe ejecutarse despues de que la escena haya tenido oportunidad de leer el input.
-
-## 23. Proyecto Visual Studio
-
-Los ficheros nuevos de escena se han incluido en `GLFWDemo.vcxproj`:
-
-```xml
-<ClCompile Include="src\scene\LevelEditorScene.cpp" />
-<ClCompile Include="src\scene\LevelScene.cpp" />
-<ClInclude Include="src\scene\Scene.h" />
-<ClInclude Include="src\scene\LevelEditorScene.h" />
-<ClInclude Include="src\scene\LevelScene.h" />
-```
-
-Tambien se han incluido en `GLFWDemo.vcxproj.filters` para que Visual Studio los muestre agrupados.
-
-Ademas, el proyecto incluye `$(ProjectDir)src` en las rutas de include. Esto permite que desde `src/scene` se puedan usar includes simples:
+El valor empieza cerca de `0.0f` y termina en `1.0f`. Luego se usa una interpolacion lineal:
 
 ```cpp
-#include "Window.h"
-#include "KeyListener.h"
+float lerp(float start, float end, float progress) {
+  return start + ((end - start) * progress);
+}
 ```
 
-sin tener que escribir rutas relativas fragiles como `../Window.h`.
+Esto evita el salto brusco. El color parte del color real de la escena y avanza poco a poco hacia un color oscuro.
 
-## 24. Convenciones de nombres
+## 13. `LevelEditorScene`: cuadrado
 
-Convenciones actuales del proyecto:
+`LevelEditorScene` representa la escena inicial. En `init()` define un fondo rojo:
 
-- Clases en `PascalCase`: `Window`, `Scene`, `LevelScene`.
-- Metodos en `camelCase`: `run`, `changeScene`, `setClearColor`.
-- Miembros privados con prefijo `m_`: `m_scene`, `m_deltaTime`, `m_timeStarted`.
-- Miembros estaticos internos tambien siguen `m_` si representan estado privado de la clase, como `TimeUtil::m_timeStarted`.
-- Constantes con nombre descriptivo y, cuando existan, idealmente `constexpr`.
+```cpp
+Window::get().setClearColor(1.00f, 0.25f, 0.25f);
+```
 
-Esta convencion no es la unica valida en C++, pero lo importante es que el proyecto sea coherente.
+En `update()` espera `ESPACIO`, inicia la transicion y al terminar cambia a `LevelScene`:
 
-## 25. Codificacion y finales de linea
+```cpp
+if (m_timeToChangeScene <= 0.0f) {
+  Window::get().changeScene(1);
+}
+```
 
-El proyecto debe mantenerse con:
+En `render()` dibuja un cuadrado con OpenGL inmediato:
 
-- UTF-8 sin BOM.
-- Finales de linea `LF`.
+```cpp
+glBegin(GL_QUADS);
 
-Esto reduce diferencias innecesarias en Git y evita que Visual Studio, PowerShell o herramientas externas introduzcan cambios de formato no deseados.
+glColor3f(1.0f, 0.2f, 0.2f);
+glVertex2f(-0.35f, -0.35f);
 
-## 26. Como compilar
+glColor3f(0.2f, 1.0f, 0.2f);
+glVertex2f(0.35f, -0.35f);
+
+glColor3f(0.2f, 0.4f, 1.0f);
+glVertex2f(0.35f, 0.35f);
+
+glColor3f(1.0f, 1.0f, 0.2f);
+glVertex2f(-0.35f, 0.35f);
+
+glEnd();
+```
+
+Al final restaura el color blanco para no dejar estado OpenGL arrastrado:
+
+```cpp
+glColor3f(1.0f, 1.0f, 1.0f);
+```
+
+## 14. `LevelScene`: triangulo
+
+`LevelScene` representa la segunda escena. En `init()` define un fondo azul:
+
+```cpp
+Window::get().setClearColor(0.25f, 0.25f, 1.00f);
+```
+
+En `update()` espera `ESPACIO`, inicia la transicion y al terminar vuelve a `LevelEditorScene`:
+
+```cpp
+if (m_timeToChangeScene <= 0.0f) {
+  Window::get().changeScene(0);
+}
+```
+
+En `render()` dibuja un triangulo:
+
+```cpp
+glBegin(GL_TRIANGLES);
+
+glColor3f(0.9f, 0.1f, 0.2f);
+glVertex2f(0.0f, 0.45f);
+
+glColor3f(0.1f, 0.6f, 1.0f);
+glVertex2f(-0.45f, -0.35f);
+
+glColor3f(0.2f, 0.9f, 0.3f);
+glVertex2f(0.45f, -0.35f);
+
+glEnd();
+```
+
+## 15. Sobre OpenGL inmediato
+
+La demo usa `glBegin`, `glEnd`, `glVertex2f` y `glColor3f`. Es OpenGL antiguo, pero tiene una ventaja para esta fase: permite dibujar geometria simple sin introducir todavia GLAD, GLEW, shaders, VAO, VBO o EBO.
+
+Esto no es la meta final para un motor moderno. Es una herramienta didactica para ver ya el ciclo completo:
+
+```text
+clear -> scene.render() -> swap buffers
+```
+
+El siguiente salto natural sera integrar GLAD o GLEW y pasar a OpenGL moderno.
+
+## 16. Input
+
+`Window` mantiene input global:
+
+```cpp
+if (KeyListener::isKeyPressed(GLFW_KEY_ESCAPE)) {
+  glfwSetWindowShouldClose(m_glfwWindow, GLFW_TRUE);
+}
+```
+
+Las escenas leen su propio input. En esta demo, ambas usan `ESPACIO` para cambiar de escena.
+
+Una mejora futura sera distinguir entre tecla mantenida y tecla pulsada este frame. Ahora mismo `isKeyPressed()` devuelve si la tecla esta abajo, por lo que mantener `ESPACIO` puede disparar la accion al entrar en la siguiente escena.
+
+## 17. Como compilar
 
 Desde Visual Studio 2019:
 
@@ -769,27 +426,24 @@ Para Release:
 & 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe' 'GLFWDemo.sln' /p:Configuration=Release /p:Platform=x64
 ```
 
-## 27. Resumen de cambios de 0.3.1
+## 18. Resumen de cambios de 0.4.0
 
-- Sistema inicial de escenas integrado en el proyecto.
-- Nueva clase base abstracta `Scene`.
-- Nuevas escenas `LevelEditorScene` y `LevelScene`.
-- `Window` posee la escena activa con `std::unique_ptr<Scene>`.
-- `Window` calcula `deltaTime` y lo entrega a `Scene::update(float)`.
-- Cambio de escena diferido cuando se solicita desde dentro de `update()`.
-- Limpieza de demos antiguas de raton, scroll, fade, FPS y pulso visual dentro de `Window`.
-- `TimeUtil` simplificado para conservar solo la API usada actualmente.
-- `TimeUtil::m_timeStarted` renombrado para seguir la convencion de miembros privados.
-- README y tutorial actualizados para reflejar la arquitectura actual.
-- Proyecto Visual Studio actualizado con los ficheros de escena y rutas de include.
+- `Scene` incorpora `render()` ademas de `init()` y `update(deltaTime)`.
+- `Window::render()` limpia pantalla y despues llama a `m_scene->render()`.
+- `LevelEditorScene` dibuja un cuadrado de colores.
+- `LevelScene` dibuja un triangulo de colores.
+- `ESPACIO` alterna entre ambas escenas.
+- Ambas escenas usan `deltaTime` para transiciones temporizadas.
+- El fondo interpola suavemente desde el color inicial de la escena hasta un color oscuro.
+- Se mantiene el cambio de escena diferido para evitar destruir la escena durante su propio `update()`.
+- Se conserva UTF-8 sin BOM y finales de linea `LF`.
 
-## 28. Siguientes pasos razonables
+## 19. Siguientes pasos razonables
 
 - Sustituir ids numericos de escena por `enum class`.
-- Crear `SceneManager` si aumenta el numero de escenas.
-- Separar renderizado en una clase `Renderer`.
-- Crear `WindowConfig` para evitar valores fijos dentro de `Window`.
-- Anadir callback de resize y llamar a `glViewport`.
-- Dibujar un triangulo como primera geometria OpenGL real.
-- Anadir un metodo `render()` a `Scene` cuando las escenas empiecen a dibujar contenido propio.
-- Crear una escena de prueba de input para validar teclado y raton desde el nuevo sistema.
+- Crear un `SceneManager`.
+- Crear una clase `Renderer`.
+- Integrar GLAD o GLEW para OpenGL moderno.
+- Sustituir OpenGL inmediato por shaders, VAO, VBO y EBO.
+- Anadir deteccion de tecla pulsada este frame.
+- Anadir callback de resize y actualizar `glViewport`.

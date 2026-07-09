@@ -1,8 +1,8 @@
-# GLFW Game Engine 0.3.1
+# GLFW Game Engine 0.4.0
 
-Proyecto demo en C++17 para Visual Studio 2019 que usa GLFW 3.4 para crear una ventana, recibir input y organizar la logica mediante un sistema inicial de escenas.
+Proyecto demo en C++17 para Visual Studio 2019 que usa GLFW 3.4 para crear una ventana, recibir input y organizar la logica en escenas con actualizacion y renderizado separados.
 
-La version `0.3.1` consolida el trabajo de la rama `0.3.x`: `Window` queda como base del motor, `Scene` define el contrato de logica, las escenas concretas viven en `src/scene`, y el bucle principal entrega `deltaTime` a la escena activa en cada frame.
+La version `0.4.0` introduce una demo visual completa con dos escenas: una escena de cuadrado y una escena de triangulo. Ambas escenas dibujan geometria OpenGL basica y cambian entre si con una transicion de fondo temporizada mediante `deltaTime`.
 
 ## Requisitos
 
@@ -44,10 +44,10 @@ GLFWDemo/src
 
 - `main.cpp`: punto de entrada real del programa. Crea `Application`, ejecuta `run()` y captura excepciones.
 - `Application`: capa principal de la aplicacion. Posee una instancia de `Window`.
-- `Window`: encapsula GLFW, el contexto OpenGL, callbacks, bucle principal, input global, calculo de tiempo, escena activa y render basico.
-- `Scene`: clase abstracta que define el contrato comun de las escenas.
-- `LevelEditorScene`: escena inicial. Permite pulsar `ESPACIO` para iniciar una transicion temporizada.
-- `LevelScene`: escena de juego minima preparada para la logica futura.
+- `Window`: encapsula GLFW, el contexto OpenGL, callbacks, bucle principal, input global, calculo de tiempo, escena activa y render base.
+- `Scene`: contrato comun de escenas con `init()`, `update(deltaTime)` y `render()`.
+- `LevelEditorScene`: escena inicial. Dibuja un cuadrado y cambia al triangulo con `ESPACIO`.
+- `LevelScene`: escena de juego/demo. Dibuja un triangulo y vuelve al cuadrado con `ESPACIO`.
 - `KeyListener`: conserva el estado del teclado recibido desde callbacks de GLFW.
 - `MouseListener`: conserva botones, posicion, desplazamiento y scroll del raton para futuras escenas.
 - `TimeUtil`: centraliza el reloj base usado para calcular segundos transcurridos desde el inicio del bucle.
@@ -55,9 +55,12 @@ GLFWDemo/src
 ## Demo actual
 
 - Al arrancar se carga `LevelEditorScene`.
+- `LevelEditorScene` muestra un cuadrado de colores sobre fondo rojo.
+- `LevelScene` muestra un triangulo de colores sobre fondo azul.
+- `ESPACIO`: inicia una transicion temporizada hacia la otra escena.
 - `ESC`: cierra la ventana.
-- `ESPACIO`: inicia una transicion hacia `LevelScene`.
 - La transicion usa `deltaTime`, por lo que no depende de los FPS.
+- El fondo interpola suavemente desde el color de la escena actual hasta un color oscuro antes de cambiar.
 - El cambio de escena se aplica de forma diferida si se solicita dentro de `Scene::update()`.
 
 ## Bucle principal
@@ -71,6 +74,8 @@ processInput()
 scene.update(deltaTime)
 aplicar cambio de escena pendiente
 render()
+  -> limpiar pantalla
+  -> scene.render()
 glfwSwapBuffers()
 MouseListener::update()
 ```
@@ -79,7 +84,13 @@ Este orden separa tres ideas importantes:
 
 - GLFW actualiza eventos antes de que la escena lea input.
 - La escena recibe un `deltaTime` estable calculado una sola vez por frame.
-- Los cambios de escena pedidos durante `update()` se aplican al salir de ese `update()`.
+- La escena dibuja despues de limpiar la pantalla, por lo que la geometria no se borra antes de mostrarse.
+
+## Render actual
+
+La demo usa OpenGL inmediato (`glBegin`, `glVertex2f`, `glColor3f`) para mantener la primera version visual sencilla y sin introducir todavia un loader como GLAD o GLEW.
+
+Esta tecnica es antigua y no es la ruta recomendada para OpenGL moderno, pero es util para aprender el flujo basico: limpiar pantalla, dibujar una primitiva, intercambiar buffers y repetir.
 
 ## Compilar y ejecutar
 
@@ -112,6 +123,6 @@ La aplicacion tambien se puede cerrar usando el boton de cerrar de la ventana.
 - Sustituir los ids numericos de escena por un `enum class`.
 - Crear un `SceneManager` si aumenta el numero de escenas.
 - Mover el render OpenGL a una clase `Renderer`.
+- Integrar GLAD o GLEW para usar OpenGL moderno con shaders, VAO, VBO y EBO.
 - Crear `WindowConfig` para ancho, alto y titulo.
 - Anadir callback de resize para actualizar `glViewport`.
-- Dibujar la primera geometria real, por ejemplo un triangulo.

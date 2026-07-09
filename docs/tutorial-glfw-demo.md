@@ -1,6 +1,6 @@
-# Tutorial del proyecto GLFW Game Engine 0.2.2
+# Tutorial del proyecto GLFW Game Engine 0.2.3
 
-Este documento explica la estructura actual del proyecto y el papel de cada parte del codigo. La version `0.2.2` abre una ventana con GLFW, crea un contexto OpenGL basico y usa listeners propios para leer teclado, botones del raton y posicion del cursor.
+Este documento explica la estructura actual del proyecto y el papel de cada parte del codigo. La version `0.2.3` abre una ventana con GLFW, crea un contexto OpenGL basico y usa listeners propios para leer teclado, botones del raton, posicion del cursor y scroll.
 
 ## 1. Estructura general
 
@@ -41,7 +41,7 @@ Representa el estado del teclado. GLFW avisa cuando una tecla se pulsa o se suel
 
 ### `MouseListener`
 
-Representa el estado del raton. Guarda botones pulsados, posicion actual y desplazamiento entre frames. Asi `Window` puede consultar el raton sin hablar directamente con la API de GLFW en cada sitio.
+Representa el estado del raton. Guarda botones pulsados, posicion actual, desplazamiento entre frames y desplazamiento de scroll. Asi `Window` puede consultar el raton sin hablar directamente con la API de GLFW en cada sitio.
 
 ## 2. `main.cpp`
 
@@ -174,9 +174,10 @@ El destructor libera recursos. Este patron se conoce como RAII: el objeto se enc
 glfwSetKeyCallback(m_glfwWindow, KeyListener::keyCallback);
 glfwSetMouseButtonCallback(m_glfwWindow, MouseListener::mouseButtonCallback);
 glfwSetCursorPosCallback(m_glfwWindow, MouseListener::mousePositionCallback);
+glfwSetScrollCallback(m_glfwWindow, MouseListener::mouseScrollCallback);
 ```
 
-Despues de crear la ventana, `Window` registra los callbacks de teclado, botones de raton y posicion del cursor. Estas lineas conectan GLFW con nuestras clases `KeyListener` y `MouseListener`.
+Despues de crear la ventana, `Window` registra los callbacks de teclado, botones de raton, posicion del cursor y scroll. Estas lineas conectan GLFW con nuestras clases `KeyListener` y `MouseListener`.
 
 El metodo tambien inicializa GLFW, configura la ventana, crea el contexto OpenGL, activa v-sync con `glfwSwapInterval(1)` y muestra la ventana.
 
@@ -229,11 +230,12 @@ void Window::processInput() {
 
 - `ESC`: marca la ventana para cerrarse.
 - Clic izquierdo: activa el fundido hacia negro.
-- Posicion del raton: mientras no este activo el fundido, cambia los componentes RGB del fondo.
+- Posicion del raton: mientras no este activo el fundido, cambia los componentes RGB base del fondo.
+- Scroll vertical: aumenta o reduce `m_colorOffset`, que sube o baja la intensidad de los colores.
 
-La posicion se normaliza dividiendo entre el tamano actual de la ventana. `std::clamp` limita el resultado entre `0.0f` y `1.0f`, que es el rango que espera `glClearColor`.
+La posicion se normaliza dividiendo entre el tamano actual de la ventana. `std::clamp` limita el resultado entre `0.0f` y `1.0f`, que es el rango que espera `glClearColor`. El scroll tambien se limita con `std::clamp` para mantener el desplazamiento de color entre `-0.5f` y `0.5f`.
 
-La demo tambien escribe la posicion del raton en consola cuando detecta desplazamiento.
+La demo tambien escribe la posicion del raton y el desplazamiento de color en consola cuando detecta movimiento o scroll.
 
 ### `render()`
 
@@ -372,20 +374,21 @@ Desde PowerShell:
 & 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe' 'GLFWDemo.sln' /t:Rebuild /p:Configuration=Debug /p:Platform=x64 /m
 ```
 
-## 10. Version 0.2.2
+## 10. Version 0.2.3
 
-La version `0.2.2` incluye:
+La version `0.2.3` incluye:
 
 - Proyecto Visual Studio 2019 en C++17.
 - GLFW 3.4 vendorizado como dependencia local.
 - Clase `Application` como capa principal.
 - Clase `Window` para encapsular GLFW, OpenGL basico, input y render.
 - Clase `KeyListener` para centralizar el estado del teclado.
-- Clase `MouseListener` para centralizar botones, posicion y desplazamiento del raton.
+- Clase `MouseListener` para centralizar botones, posicion, desplazamiento y scroll del raton.
 - Cierre de ventana con `ESC`.
 - Fundido hacia negro con clic izquierdo.
 - Color de fondo reactivo a la posicion del raton.
-- Salida por consola con la posicion actual del raton.
+- Scroll vertical para subir o bajar la intensidad de los colores.
+- Salida por consola con la posicion actual del raton y el desplazamiento de color.
 - Configuracion de Git para mantener UTF-8 y saltos de linea `LF`.
 
 ## 11. Siguientes pasos razonables

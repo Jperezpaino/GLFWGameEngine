@@ -29,6 +29,7 @@ class Window {
     float m_green = 1.0f;
     float m_blue = 1.0f;
     float m_alpha = 1.0f;
+    float m_colorOffset = 0.0f;
     bool m_fadeToBlack = false;
 
     void init();

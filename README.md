@@ -1,4 +1,4 @@
-# GLFW Game Engine 0.2.2
+# GLFW Game Engine 0.2.3
 
 Demo base en C++ para Visual Studio 2019 que abre una ventana con GLFW, crea un contexto OpenGL y procesa entrada de teclado y raton mediante listeners propios.
 
@@ -32,12 +32,13 @@ GLFWDemo/src
 - `Application`: capa principal de la aplicacion.
 - `Window`: encapsula GLFW, la ventana, el bucle principal, el input y el render basico.
 - `KeyListener`: guarda el estado de las teclas recibidas desde el callback de GLFW.
-- `MouseListener`: guarda el estado de los botones, la posicion y el desplazamiento del raton.
+- `MouseListener`: guarda el estado de los botones, la posicion, el desplazamiento y el scroll del raton.
 
 ## Demo actual
 
-- Mover el raton cambia el color del fondo usando la posicion X/Y del cursor.
-- La consola muestra la posicion actual del raton.
+- Mover el raton cambia el color base del fondo usando la posicion X/Y del cursor.
+- Usar la rueda del raton sube o baja la intensidad de los colores.
+- La consola muestra la posicion actual del raton y el desplazamiento de color.
 - `ESC`: cierra la ventana.
 - Clic izquierdo: activa un fundido progresivo del fondo hacia negro.
 

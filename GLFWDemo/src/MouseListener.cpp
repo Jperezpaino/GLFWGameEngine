@@ -39,6 +39,25 @@ void MouseListener::mouseButtonCallback(
   } else if (action == GLFW_RELEASE) {
     listener.m_mouseButtonPressed[button] = false;
   }
+
+  listener.m_dragging = false;
+  for (bool mouseButtonPressed : listener.m_mouseButtonPressed) {
+    if (mouseButtonPressed) {
+      listener.m_dragging = true;
+      break;
+    }
+  }
+}
+
+void MouseListener::mouseScrollCallback(
+    GLFWwindow* window,
+    double xOffset,
+    double yOffset) {
+  (void)window;
+
+  MouseListener& listener = MouseListener::get();
+  listener.m_scrollXPosition = xOffset;
+  listener.m_scrollYPosition = yOffset;
 }
 
 bool MouseListener::isMouseButtonDown(
@@ -57,6 +76,9 @@ void MouseListener::update() {
 
   listener.m_lastXPosition = listener.m_xPosition;
   listener.m_lastYPosition = listener.m_yPosition;
+
+  listener.m_scrollXPosition = 0.0;
+  listener.m_scrollYPosition = 0.0;
 }
 
 float MouseListener::getXPosition() {
@@ -77,4 +99,19 @@ float MouseListener::getXDisplacement() {
 float MouseListener::getYDisplacement() {
   MouseListener& listener = MouseListener::get();
   return static_cast<float>(listener.m_yPosition - listener.m_lastYPosition);
+}
+
+float MouseListener::getScrollXPosition() {
+  MouseListener& listener = MouseListener::get();
+  return static_cast<float>(listener.m_scrollXPosition);
+}
+
+float MouseListener::getScrollYPosition() {
+  MouseListener& listener = MouseListener::get();
+  return static_cast<float>(listener.m_scrollYPosition);
+}
+
+bool MouseListener::isDragging() {
+  MouseListener& listener = MouseListener::get();
+  return listener.m_dragging;
 }

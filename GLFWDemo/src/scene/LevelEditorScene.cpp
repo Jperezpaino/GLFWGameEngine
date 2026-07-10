@@ -1,3 +1,5 @@
+#include <glad/glad.h>
+
 #include "LevelEditorScene.h"
 
 #include "KeyListener.h"

@@ -10,6 +10,10 @@
       <UniqueIdentifier>{D2CCAC6D-3EEB-4ED7-9E49-E4B967F51369}</UniqueIdentifier>
     </Filter>
 
+    <Filter Include="GLAD Source Files">
+      <UniqueIdentifier>{B56D78E6-897F-4D5B-8A8C-7E7D921AB812}</UniqueIdentifier>
+    </Filter>
+
     <Filter Include="GLFW Source Files">
       <UniqueIdentifier>{5C9A27B0-8AE1-42CB-8D98-BD32A25283C6}</UniqueIdentifier>
     </Filter>
@@ -83,6 +87,9 @@
       <Filter>GLFW Source Files</Filter>
     </ClCompile>
 
+    <ClCompile Include="$(SolutionDir)third_party\glad\src\glad.c">
+      <Filter>GLAD Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -106,6 +113,12 @@
     </ClCompile></ItemGroup>
 
   <ItemGroup>
+    <ClInclude Include="$(SolutionDir)third_party\glad\include\glad\glad.h">
+      <Filter>GLAD Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="$(SolutionDir)third_party\glad\include\KHR\khrplatform.h">
+      <Filter>GLAD Source Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\Window.h">
       <Filter>Source Files</Filter>
     </ClInclude>

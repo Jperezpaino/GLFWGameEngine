@@ -1,10 +1,10 @@
-# Tutorial del proyecto GLFW Game Engine 0.4.0
+# Tutorial del proyecto GLFW Game Engine 0.4.1
 
-Este documento explica la estructura actual del proyecto. La version `0.4.0` da un paso importante: las escenas ya no solo actualizan logica, tambien dibujan contenido propio. La demo actual alterna entre una escena con un cuadrado y otra escena con un triangulo, usando `deltaTime` para realizar transiciones suaves de color de fondo.
+Este documento explica la estructura actual del proyecto. La version `0.4.1` da un paso importante: las escenas ya no solo actualizan logica, tambien dibujan contenido propio. La demo actual alterna entre una escena con un cuadrado y otra escena con un triangulo, usando `deltaTime` para realizar transiciones suaves de color de fondo.
 
-## 1. Objetivo de la version 0.4.0
+## 1. Objetivo de la version 0.4.1
 
-La rama `0.3.x` dejo preparado el sistema de escenas y el calculo de `deltaTime`. La version `0.4.0` completa esa base con una demo visual clara:
+La rama `0.3.x` dejo preparado el sistema de escenas y el calculo de `deltaTime`. La version `0.4.1` completa esa base con una demo visual clara:
 
 - `Scene` tiene tres fases: `init()`, `update(deltaTime)` y `render()`.
 - `Window` mantiene el bucle principal y delega la logica y el dibujo en la escena activa.
@@ -49,7 +49,7 @@ GLFW - Demo
     `-- glfw
 ```
 
-La carpeta `src` contiene el codigo propio del proyecto. La carpeta `third_party/glfw` contiene GLFW vendorizado y compilado junto al proyecto.
+La carpeta `src` contiene el codigo propio del proyecto. La carpeta `third_party/glfw` contiene GLFW vendorizado y compilado junto al proyecto. La carpeta `third_party/glad` contiene GLAD, generado para OpenGL 3.3 Compatibility con loader activado.
 
 ## 3. Flujo completo de ejecucion
 
@@ -61,6 +61,8 @@ main()
           -> init()
               -> inicializa GLFW
               -> crea la ventana
+              -> crea el contexto OpenGL
+              -> inicializa GLAD
               -> registra callbacks
               -> crea la primera escena
               -> llama a scene.init()
@@ -136,6 +138,7 @@ Las operaciones de copia y movimiento se borran porque `Window` gestiona recurso
 - Inicializacion y finalizacion de GLFW.
 - Creacion de ventana.
 - Contexto OpenGL.
+- Inicializacion de GLAD.
 - Registro de callbacks.
 - Bucle principal.
 - Calculo de `deltaTime`.
@@ -201,7 +204,28 @@ void Window::render() {
 
 Este orden es importante. Si la escena dibujara antes de `glClear`, el dibujo se borraria antes de llegar a pantalla.
 
-## 9. Contrato de `Scene`
+## 9. GLAD
+
+GLAD es el loader de OpenGL del proyecto. En Windows, incluir GLFW no basta para usar funciones modernas de OpenGL. GLAD carga esas funciones despues de que exista un contexto OpenGL activo.
+
+En el proyecto se ha integrado asi:
+
+- `third_party/glad/include` se anade a las rutas de include.
+- `third_party/glad/src/glad.c` se compila junto con la aplicacion.
+- `GLFW_INCLUDE_NONE` se define en los headers propios antes de incluir GLFW para evitar que GLFW incluya `gl.h`.
+- Los ficheros que usan funciones OpenGL incluyen primero `glad/glad.h`.
+
+La inicializacion ocurre en `Window::init()`, justo despues de `glfwMakeContextCurrent(...)`:
+
+```cpp
+if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+  throw std::runtime_error("Failed to initialize GLAD.");
+}
+```
+
+Ese orden es obligatorio: GLAD necesita que el contexto OpenGL exista antes de cargar punteros de funciones.
+
+## 10. Contrato de `Scene`
 
 `Scene` define la interfaz comun:
 
@@ -226,7 +250,7 @@ class Scene {
 
 Esta separacion es muy habitual en juegos y motores pequenos: actualizar estado y dibujar estado son fases diferentes.
 
-## 10. Carga y cambio de escena
+## 11. Carga y cambio de escena
 
 `Window` guarda la escena activa con:
 
@@ -258,7 +282,7 @@ Actualmente:
 
 Si una escena pide cambiar durante `update()`, `Window` no destruye la escena inmediatamente. Guarda el cambio en `m_pendingScene` y lo aplica justo despues de terminar `update()`. Esto evita destruir un objeto mientras aun se esta ejecutando un metodo suyo.
 
-## 11. `deltaTime`
+## 12. `deltaTime`
 
 `deltaTime` es el tiempo transcurrido desde el frame anterior.
 
@@ -270,9 +294,9 @@ void Window::updateDeltaTime() {
 }
 ```
 
-Las escenas lo reciben en `update(float deltaTime)`. En `0.4.0` se usa para temporizar transiciones de fondo. Asi la transicion dura aproximadamente lo mismo independientemente de si la aplicacion corre a 30, 60 o mas FPS.
+Las escenas lo reciben en `update(float deltaTime)`. En `0.4.1` se usa para temporizar transiciones de fondo. Asi la transicion dura aproximadamente lo mismo independientemente de si la aplicacion corre a 30, 60 o mas FPS.
 
-## 12. Transicion suave de fondo
+## 13. Transicion suave de fondo
 
 Cada escena tiene:
 
@@ -304,7 +328,7 @@ float lerp(float start, float end, float progress) {
 
 Esto evita el salto brusco. El color parte del color real de la escena y avanza poco a poco hacia un color oscuro.
 
-## 13. `LevelEditorScene`: cuadrado
+## 14. `LevelEditorScene`: cuadrado
 
 `LevelEditorScene` representa la escena inicial. En `init()` define un fondo rojo:
 
@@ -346,7 +370,7 @@ Al final restaura el color blanco para no dejar estado OpenGL arrastrado:
 glColor3f(1.0f, 1.0f, 1.0f);
 ```
 
-## 14. `LevelScene`: triangulo
+## 15. `LevelScene`: triangulo
 
 `LevelScene` representa la segunda escena. En `init()` define un fondo azul:
 
@@ -379,9 +403,9 @@ glVertex2f(0.45f, -0.35f);
 glEnd();
 ```
 
-## 15. Sobre OpenGL inmediato
+## 16. Sobre OpenGL inmediato
 
-La demo usa `glBegin`, `glEnd`, `glVertex2f` y `glColor3f`. Es OpenGL antiguo, pero tiene una ventaja para esta fase: permite dibujar geometria simple sin introducir todavia GLAD, GLEW, shaders, VAO, VBO o EBO.
+La demo usa `glBegin`, `glEnd`, `glVertex2f` y `glColor3f`. Es OpenGL antiguo, pero tiene una ventaja para esta fase: permite dibujar geometria simple antes de migrar a shaders, VAO, VBO y EBO. GLAD ya esta integrado, asi que el proyecto esta preparado para ese siguiente salto.
 
 Esto no es la meta final para un motor moderno. Es una herramienta didactica para ver ya el ciclo completo:
 
@@ -389,9 +413,9 @@ Esto no es la meta final para un motor moderno. Es una herramienta didactica par
 clear -> scene.render() -> swap buffers
 ```
 
-El siguiente salto natural sera integrar GLAD o GLEW y pasar a OpenGL moderno.
+El siguiente salto natural sera sustituir OpenGL inmediato por OpenGL moderno usando GLAD, shaders, VAO, VBO y EBO.
 
-## 16. Input
+## 17. Input
 
 `Window` mantiene input global:
 
@@ -405,7 +429,7 @@ Las escenas leen su propio input. En esta demo, ambas usan `ESPACIO` para cambia
 
 Una mejora futura sera distinguir entre tecla mantenida y tecla pulsada este frame. Ahora mismo `isKeyPressed()` devuelve si la tecla esta abajo, por lo que mantener `ESPACIO` puede disparar la accion al entrar en la siguiente escena.
 
-## 17. Como compilar
+## 18. Como compilar
 
 Desde Visual Studio 2019:
 
@@ -426,8 +450,9 @@ Para Release:
 & 'C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\MSBuild.exe' 'GLFWDemo.sln' /p:Configuration=Release /p:Platform=x64
 ```
 
-## 18. Resumen de cambios de 0.4.0
+## 19. Resumen de cambios de 0.4.1
 
+- GLAD se integra como dependencia externa vendorizada.
 - `Scene` incorpora `render()` ademas de `init()` y `update(deltaTime)`.
 - `Window::render()` limpia pantalla y despues llama a `m_scene->render()`.
 - `LevelEditorScene` dibuja un cuadrado de colores.
@@ -438,12 +463,11 @@ Para Release:
 - Se mantiene el cambio de escena diferido para evitar destruir la escena durante su propio `update()`.
 - Se conserva UTF-8 sin BOM y finales de linea `LF`.
 
-## 19. Siguientes pasos razonables
+## 20. Siguientes pasos razonables
 
 - Sustituir ids numericos de escena por `enum class`.
 - Crear un `SceneManager`.
 - Crear una clase `Renderer`.
-- Integrar GLAD o GLEW para OpenGL moderno.
-- Sustituir OpenGL inmediato por shaders, VAO, VBO y EBO.
+- Sustituir OpenGL inmediato por shaders, VAO, VBO y EBO usando GLAD.
 - Anadir deteccion de tecla pulsada este frame.
 - Anadir callback de resize y actualizar `glViewport`.

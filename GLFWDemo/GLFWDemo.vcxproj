@@ -79,7 +79,7 @@
       <WarningLevel>Level4</WarningLevel>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;_GLFW_WIN32;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(GlfwRoot)\include;$(GlfwRoot)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(SolutionDir)third_party\glad\include;$(GlfwRoot)\include;$(GlfwRoot)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -96,7 +96,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;_GLFW_WIN32;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)src;$(GlfwRoot)\include;$(GlfwRoot)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)src;$(SolutionDir)third_party\glad\include;$(GlfwRoot)\include;$(GlfwRoot)\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -116,6 +116,9 @@
     <ClCompile Include="src\scene\LevelEditorScene.cpp" />
     <ClCompile Include="src\scene\LevelScene.cpp" />
     <ClCompile Include="src\util\TimeUtil.cpp" />
+    <ClCompile Include="$(SolutionDir)third_party\glad\src\glad.c">
+      <WarningLevel>TurnOffAllWarnings</WarningLevel>
+    </ClCompile>
     <ClCompile Include="src\Window.cpp">
       <ObjectFileName>$(IntDir)AppWindow.obj</ObjectFileName>
     </ClCompile>
@@ -185,6 +188,8 @@
     </ClCompile>
   </ItemGroup>
     <ItemGroup>
+    <ClInclude Include="$(SolutionDir)third_party\glad\include\glad\glad.h" />
+    <ClInclude Include="$(SolutionDir)third_party\glad\include\KHR\khrplatform.h" />
     <ClInclude Include="src\Window.h" />
 
     <ClInclude Include="src\Application.h" />

@@ -1,8 +1,8 @@
-# GLFW Game Engine 0.4.0
+# GLFW Game Engine 0.4.1
 
-Proyecto demo en C++17 para Visual Studio 2019 que usa GLFW 3.4 para crear una ventana, recibir input y organizar la logica en escenas con actualizacion y renderizado separados.
+Proyecto demo en C++17 para Visual Studio 2019 que usa GLFW 3.4 para crear una ventana, GLAD para cargar funciones OpenGL y escenas con actualizacion y renderizado separados.
 
-La version `0.4.0` introduce una demo visual completa con dos escenas: una escena de cuadrado y una escena de triangulo. Ambas escenas dibujan geometria OpenGL basica y cambian entre si con una transicion de fondo temporizada mediante `deltaTime`.
+La version `0.4.1` mantiene la demo visual con dos escenas e integra GLAD como loader de OpenGL dentro del proyecto. Ambas escenas dibujan geometria OpenGL basica y cambian entre si con una transicion de fondo temporizada mediante `deltaTime`.
 
 ## Requisitos
 
@@ -10,11 +10,19 @@ La version `0.4.0` introduce una demo visual completa con dos escenas: una escen
 - Windows SDK instalado desde Visual Studio Installer.
 - Configuracion recomendada: `x64` y `Debug` durante desarrollo.
 
-## GLFW
+## Dependencias externas
+
+### GLFW
 
 GLFW 3.4 esta copiado dentro del proyecto en `third_party\glfw` y se compila desde sus fuentes junto con la aplicacion. No hace falta generar ni descargar `glfw3.lib`.
 
 El proyecto sigue aceptando la variable de entorno `GLFW_ROOT` si quieres apuntar a otra copia de GLFW con la misma estructura de carpetas. Si no existe esa variable, Visual Studio usa la copia local vendorizada.
+
+### GLAD
+
+GLAD esta copiado dentro del proyecto en `third_party\glad`. Se genero para `OpenGL 3.3 Compatibility` con loader activado.
+
+El proyecto compila `third_party\glad\src\glad.c`, incluye `third_party\glad\include` y llama a `gladLoadGLLoader(...)` despues de crear el contexto OpenGL con GLFW.
 
 ## Estructura principal
 
@@ -38,13 +46,17 @@ GLFWDemo/src
 `-- util
     |-- TimeUtil.h
     `-- TimeUtil.cpp
+
+third_party
+|-- glad
+`-- glfw
 ```
 
 ## Responsabilidades
 
 - `main.cpp`: punto de entrada real del programa. Crea `Application`, ejecuta `run()` y captura excepciones.
 - `Application`: capa principal de la aplicacion. Posee una instancia de `Window`.
-- `Window`: encapsula GLFW, el contexto OpenGL, callbacks, bucle principal, input global, calculo de tiempo, escena activa y render base.
+- `Window`: encapsula GLFW, inicializa GLAD, gestiona el contexto OpenGL, callbacks, bucle principal, input global, calculo de tiempo, escena activa y render base.
 - `Scene`: contrato comun de escenas con `init()`, `update(deltaTime)` y `render()`.
 - `LevelEditorScene`: escena inicial. Dibuja un cuadrado y cambia al triangulo con `ESPACIO`.
 - `LevelScene`: escena de juego/demo. Dibuja un triangulo y vuelve al cuadrado con `ESPACIO`.
@@ -88,7 +100,7 @@ Este orden separa tres ideas importantes:
 
 ## Render actual
 
-La demo usa OpenGL inmediato (`glBegin`, `glVertex2f`, `glColor3f`) para mantener la primera version visual sencilla y sin introducir todavia un loader como GLAD o GLEW.
+La demo usa OpenGL inmediato (`glBegin`, `glVertex2f`, `glColor3f`) para mantener la primera version visual sencilla. GLAD ya esta integrado, por lo que el siguiente paso sera migrar esta demo a OpenGL moderno con shaders, VAO, VBO y EBO.
 
 Esta tecnica es antigua y no es la ruta recomendada para OpenGL moderno, pero es util para aprender el flujo basico: limpiar pantalla, dibujar una primitiva, intercambiar buffers y repetir.
 
@@ -123,6 +135,6 @@ La aplicacion tambien se puede cerrar usando el boton de cerrar de la ventana.
 - Sustituir los ids numericos de escena por un `enum class`.
 - Crear un `SceneManager` si aumenta el numero de escenas.
 - Mover el render OpenGL a una clase `Renderer`.
-- Integrar GLAD o GLEW para usar OpenGL moderno con shaders, VAO, VBO y EBO.
+- Migrar el render actual a OpenGL moderno con shaders, VAO, VBO y EBO usando GLAD.
 - Crear `WindowConfig` para ancho, alto y titulo.
 - Anadir callback de resize para actualizar `glViewport`.

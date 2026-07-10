@@ -1,3 +1,5 @@
+#include <glad/glad.h>
+
 #include "Window.h"
 
 #include "KeyListener.h"
@@ -90,6 +92,11 @@ void Window::init() {
   glfwSetScrollCallback(m_glfwWindow, MouseListener::mouseScrollCallback);
 
   glfwMakeContextCurrent(m_glfwWindow);
+
+  if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+    throw std::runtime_error("Failed to initialize GLAD.");
+  }
+
   glfwSwapInterval(1);
   glfwShowWindow(m_glfwWindow);
 
